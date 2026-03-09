@@ -1,0 +1,18 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "AllowedHosts": "*",
+  "<API_NAME>": {
+    "Url": "<URL_TAXENGINE>",
+    "Usuario": "<USUARIO>",
+    "Senha": "<SENHA>"
+  }
+  "ConnectionStrings": {
+    "DefaultConnection": "<CONNECTION_STRING>"
+  }
+}

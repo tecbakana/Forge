@@ -1,0 +1,42 @@
+<!--
+  Template Web.config — API3_REST — ambiente: DEVELOPER
+  
+  Coloque aqui SOMENTE as chaves de appSettings e connectionStrings
+  que mudam entre ambientes. O restante do Web.config não é tocado.
+  
+  Como preencher:
+    1. Abra o Web.config atual do projeto REST
+    2. Copie as chaves de <appSettings> que variam por ambiente
+    3. Copie as <connectionStrings> que variam por ambiente
+    4. Repita o processo para homolog.xml e master.xml com os valores corretos
+-->
+<environment>
+
+  <appSettings>
+    <!-- Substitua key e value pelos seus reais -->
+    <add key="<CHAVE_1>"   value="<VALOR_DEVELOPER>" />
+    <add key="<CHAVE_2>"   value="<VALOR_DEVELOPER>" />
+    <add key="<CHAVE_3>"   value="<VALOR_DEVELOPER>" />
+    <!--
+      Exemplos comuns:
+      <add key="ApiBaseUrl"      value="http://localhost:5001" />
+      <add key="SoapServiceUrl"  value="http://localhost:6001/Service.asmx" />
+      <add key="LogLevel"        value="Debug" />
+      <add key="Environment"     value="Development" />
+    -->
+  </appSettings>
+
+  <connectionStrings>
+    <!-- Substitua name e connectionString pelos seus reais -->
+    <add name="<NOME_CONEXAO>"
+         connectionString="<CONNECTION_STRING_DEVELOPER>"
+         providerName="System.Data.SqlClient" />
+    <!--
+      Exemplo:
+      <add name="DefaultDB"
+           connectionString="Server=localhost;Database=MinhaDB_Dev;User Id=sa;Password=dev123;"
+           providerName="System.Data.SqlClient" />
+    -->
+  </connectionStrings>
+
+</environment>

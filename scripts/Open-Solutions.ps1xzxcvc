@@ -1,0 +1,165 @@
+# =============================================================================
+# Open-Solutions.ps1
+# Abre cada solution do Visual Studio 2022 na desktop virtual correta.
+#
+# Fluxo por solution:
+#   1. Verifica se a solution JA esta aberta no VS — se sim, pula
+#   2. Ativa a desktop virtual indicada via VirtualDesktop11.exe
+#   3. Abre o VS com a .sln — ele ja nasce na desktop ativa
+#
+# USO:
+#   .\Open-Solutions.ps1                      → abre todas as solutions
+#   .\Open-Solutions.ps1 -Api TaaS           → abre so uma solution especifica
+# =============================================================================
+
+param(
+    [string]$Api = "all"   # "all" | TaaS | TaxEngineReforma | TaxEngine
+)
+
+# =============================================================================
+# Localiza devenv.exe
+# =============================================================================
+$devenv = $null
+$candidatos = @(
+    "T:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\devenv.exe",
+    "T:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe",
+    "T:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.exe"
+)
+foreach ($c in $candidatos) {
+    if (Test-Path $c) { $devenv = $c; break }
+}
+if (-not $devenv) {
+    Write-Error "devenv.exe nao encontrado. Verifique a instalacao do Visual Studio 2022."
+    exit 1
+}
+Write-Host "VS: $devenv" -ForegroundColor DarkGray
+
+# =============================================================================
+# Definicao das solutions
+# =============================================================================
+$solutions = @(
+    @{
+        Name    = "TaaS"
+        Sln     = "T:\Developer\RepositorioTrabalho\Systax2025\TAAS\TaaS.sln"
+        Desktop = 1
+    },
+    @{
+        Name    = "TaxEngineReforma"
+        Sln     = "T:\Developer\RepositorioTrabalho\Systax2025\TaxEngineReforma\TaxEngineReforma.sln"
+        Desktop = 2
+    },
+    @{
+        Name    = "TaxEngine"
+        Sln     = "T:\Developer\RepositorioTrabalho\Systax2025\TaxEngine\TaxEngineService\TaxEngine.sln"
+        Desktop = 3
+    }
+)
+
+# =============================================================================
+# Filtro por Api se informado
+# =============================================================================
+if ($Api -ne "all") {
+    $solutions = $solutions | Where-Object { $_.Name -eq $Api }
+    if (-not $solutions) {
+        Write-Warning "API '$Api' nao encontrada. Valores validos: TaaS, TaxEngineReforma, TaxEngine"
+        exit 1
+    }
+}
+
+# =============================================================================
+# Funcao: verifica se a solution ja esta aberta
+#
+# Usa DOIS metodos combinados para cobrir todos os estados do VS:
+#
+# Metodo 1 — WMI (CommandLine): funciona desde o momento em que o processo
+#   sobe, mesmo antes da janela aparecer. Busca o caminho do .sln nos
+#   argumentos com que o devenv.exe foi chamado.
+#
+# Metodo 2 — MainWindowTitle: cobre o caso em que o VS ja estava aberto
+#   antes deste script rodar (processo nao tem o .sln na linha de comando,
+#   mas o titulo da janela ja mostra o nome da solution).
+# =============================================================================
+function Test-SolutionAberta {
+    param([string]$SlnPath)
+
+    $slnNome     = [System.IO.Path]::GetFileNameWithoutExtension($SlnPath)
+    $slnPathNorm = $SlnPath.ToLower()
+
+    # Metodo 1: verifica linha de comando via WMI
+    $wmiProcs = Get-WmiObject Win32_Process -Filter "Name='devenv.exe'" -ErrorAction SilentlyContinue
+    foreach ($w in $wmiProcs) {
+        if ($w.CommandLine -and $w.CommandLine.ToLower() -like "*$slnPathNorm*") {
+            return $true
+        }
+    }
+
+    # Metodo 2: verifica titulo da janela (VS ja carregado)
+    $processos = Get-Process -Name "devenv" -ErrorAction SilentlyContinue
+    foreach ($p in $processos) {
+        if ($p.MainWindowTitle -like "*$slnNome*") {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+# =============================================================================
+# Funcao: ativa a desktop virtual pelo indice (1-based)
+# =============================================================================
+function Switch-ToDesktop {
+    param([int]$DesktopIndex)
+
+    $vdExe = "T:\DevAutomation\tools\VirtualDesktop11.exe"
+
+    if (Test-Path $vdExe) {
+        & $vdExe /Switch:$($DesktopIndex - 1) 2>$null
+        Start-Sleep -Milliseconds 700
+        Write-Host "  Desktop $DesktopIndex ativada" -ForegroundColor DarkGray
+    } else {
+        Write-Warning "  VirtualDesktop11.exe nao encontrado em T:\DevAutomation\tools\"
+        Write-Host "  Mude manualmente para a Desktop $DesktopIndex e pressione qualquer tecla..." -ForegroundColor Yellow
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
+}
+
+# =============================================================================
+# Loop principal
+# =============================================================================
+Write-Host ""
+Write-Host "=== Abrindo Solutions ===" -ForegroundColor Cyan
+
+foreach ($sol in $solutions) {
+
+    Write-Host ""
+    Write-Host "→ $($sol.Name)" -ForegroundColor Yellow
+
+    # Verifica se o .sln existe no disco
+    if (-not (Test-Path $sol.Sln)) {
+        Write-Warning "  .sln nao encontrado: $($sol.Sln)"
+        continue
+    }
+
+    # Verifica se ja esta aberta via WMI + titulo de janela
+    if (Test-SolutionAberta -SlnPath $sol.Sln) {
+        Write-Host "  Ja esta aberta no Visual Studio, pulando." -ForegroundColor DarkGray
+        continue
+    }
+
+    # 1. Ativa a desktop antes de abrir o VS
+    Switch-ToDesktop -DesktopIndex $sol.Desktop
+
+    # 2. Abre o VS — ja nasce na desktop ativa
+    $proc = Start-Process -FilePath $devenv `
+                          -ArgumentList "`"$($sol.Sln)`"" `
+                          -PassThru
+
+    Write-Host "  [OK] Aberto (PID $($proc.Id))" -ForegroundColor Green
+
+    # Pausa entre aberturas para nao sobrecarregar a maquina
+    Start-Sleep -Seconds 3
+}
+
+Write-Host ""
+Write-Host "=== Concluido ===" -ForegroundColor Cyan
+Write-Host ""
