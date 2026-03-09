@@ -8,7 +8,7 @@
   },
   "AllowedHosts": "*",
   "<API_NAME>": {
-    "Url": "<URL_TAXENGINE>",
+    "Url": "<URL_API>",
     "Usuario": "<USUARIO>",
     "Senha": "<SENHA>"
   }
