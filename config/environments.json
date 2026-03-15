@@ -6,7 +6,7 @@
 			"configFile": "<CONFIG_FILE_PATH>",
 			"gitRepo": "<GIT_REPO_PATH>",
 			"desktop": 1,
-			"batchOpen": "<DRIVE_LETTER>:\\DevAutomation\\batches\\open-taas.bat",
+			"batchOpen": "<DRIVE_LETTER>:\\DevAutomation\\batches\\open-solution.bat",
 			"clients": [
 				"default",
 				"client1",
