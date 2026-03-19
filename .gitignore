@@ -1,0 +1,21 @@
+# Estado em tempo de execução
+config/state.json
+
+# Backups locais
+*.BKP
+scripts/testBank_1.ps1
+
+# Pasta legada (antiga estrutura nested do git)
+DevAutomation/
+files (1)/
+
+# Configurações com credenciais reais
+config/environments.json
+config/environments - Copia.json
+templates/
+
+# Visual Studio
+.vs/
+
+# Binários de terceiros
+tools/VirtualDesktop11.exe

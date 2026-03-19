@@ -1,0 +1,198 @@
+# =============================================================================
+# Switch-Environment.ps1
+# Script principal para troca de ambiente de desenvolvimento
+#
+# USO:
+#   .\Switch-Environment.ps1 -Environment developer
+#   .\Switch-Environment.ps1 -Environment developer -Client cliente1
+#   .\Switch-Environment.ps1 -Environment homolog  -CloseVisualStudio -GitPull -OpenVisualStudio
+#   .\Switch-Environment.ps1 -Environment master   -CloseVisualStudio -GitPull -OpenVisualStudio -Force
+#
+# PARÂMETROS:
+#   -Environment         : developer | homolog | master  (obrigatório)
+#   -Client              : nome do cliente (opcional, padrão: default)
+#   -CloseVisualStudio   : fecha o VS antes de trocar branch/config
+#   -GitPull             : faz checkout da branch + pull
+#   -OpenVisualStudio    : abre as solutions via .bat ao final
+#   -Force               : ignora alterações não commitadas no git
+# =============================================================================
+
+param(
+    [Parameter(Mandatory=$true)]
+    [ValidateSet("developer", "homolog", "master")]
+    [string]$Environment,
+
+    [string]$Client = "default",
+
+    [switch]$OpenVisualStudio,
+    [switch]$CloseVisualStudio,
+    [switch]$GitPull,
+    [switch]$Force
+)
+
+$ErrorActionPreference = "Continue"
+$scriptDir    = "T:\DevAutomation\scripts"
+$configDir    = "T:\DevAutomation\config"
+$templatesDir = "T:\DevAutomation\templates"
+
+# Carrega funcoes auxiliares
+. "$scriptDir\Apply-Configs.ps1"
+
+# Carrega configuracao central
+$configFile = Join-Path $configDir "environments.json"
+if (-not (Test-Path $configFile)) {
+    Write-Error "Arquivo de configuracao nao encontrado: $configFile"
+    exit 1
+}
+
+# Remove comentarios do JSON antes de parsear
+$rawConfig   = Get-Content $configFile -Raw
+$cleanConfig = $rawConfig -replace '(?m)^\s*//.*$', ''
+$config      = $cleanConfig | ConvertFrom-Json
+
+# =============================================================================
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Ambiente : $($Environment.ToUpper())" -ForegroundColor Cyan
+Write-Host "  Cliente  : $Client" -ForegroundColor Cyan
+Write-Host "  Data/Hora: $(Get-Date -Format 'dd/MM/yyyy HH:mm:ss')" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+
+# =============================================================================
+# PASSO 1 - Fechar Visual Studio
+# =============================================================================
+if ($CloseVisualStudio) {
+    Write-Host "`n[1/4] Fechando Visual Studio..." -ForegroundColor Yellow
+    $solutionNames = $config.apis | Select-Object -ExpandProperty name
+    Close-VisualStudioSolutions -SolutionNames $solutionNames
+    Write-Host "  [VS] Instancias encerradas." -ForegroundColor Green
+} else {
+    Write-Host "`n[1/4] Fechar VS ignorado (-CloseVisualStudio nao informado)" -ForegroundColor DarkGray
+}
+
+# =============================================================================
+# PASSO 2 - Git checkout + pull
+# =============================================================================
+if ($GitPull) {
+    Write-Host "`n[2/4] Atualizando repositorios git..." -ForegroundColor Yellow
+
+    $processedRepos = @{}
+
+    foreach ($api in $config.apis) {
+        $repo = $api.gitRepo
+
+        if ($processedRepos.ContainsKey($repo)) {
+            Write-Host "  [$($api.name)] Repo ja processado, pulando." -ForegroundColor DarkGray
+            continue
+        }
+
+        Write-Host "  [$($api.name)] $repo" -ForegroundColor Yellow
+
+        if (-not (Test-Path $repo)) {
+            Write-Warning "  Caminho do repositorio nao encontrado: $repo"
+            continue
+        }
+
+        Push-Location $repo
+
+        $dirty = git status --porcelain 2>&1
+        if ($dirty -and -not $Force) {
+            Write-Warning "  Existem alteracoes nao commitadas em $repo"
+            Write-Warning "  Use -Force para ignorar ou faca commit/stash antes."
+            Pop-Location
+            continue
+        }
+
+        if ($dirty -and $Force) {
+            Write-Host "  [GIT] -Force ativo: ignorando alteracoes locais" -ForegroundColor DarkYellow
+        }
+
+		$null = git fetch origin 2>&1
+		$null = git checkout $Environment 2>&1
+		$null = git pull origin $Environment 2>&1
+
+        Write-Host "  [GIT] Branch '$Environment' atualizada" -ForegroundColor Green
+
+        Pop-Location
+        $processedRepos[$repo] = $true
+    }
+} else {
+    Write-Host "`n[2/4] Git pull ignorado (-GitPull nao informado)" -ForegroundColor DarkGray
+}
+
+# =============================================================================
+# PASSO 3 - Aplicar configuracoes
+# =============================================================================
+Write-Host "`n[3/4] Aplicando configuracoes..." -ForegroundColor Yellow
+
+foreach ($api in $config.apis) {
+    Write-Host "  [$($api.name)] tipo: $($api.configType)" -ForegroundColor Yellow
+
+    $ext = if ($api.configType -eq "json") { "json" } else { "xml" }
+
+    # Busca template na subpasta: templates\API1\developer\cliente1.json
+    $template = Join-Path $templatesDir "$($api.name)\$Environment\$Client.$ext"
+
+    # Fallback para default se o cliente especifico nao tiver template nessa API
+    if (-not (Test-Path $template)) {
+        $fallback = Join-Path $templatesDir "$($api.name)\$Environment\default.$ext"
+        if (Test-Path $fallback) {
+            Write-Host "    [INFO] Template '$Client' nao encontrado, usando default" -ForegroundColor DarkYellow
+            $template = $fallback
+        } else {
+            Write-Warning "  Template nao encontrado: $template"
+            continue
+        }
+    }
+
+    if ($api.configType -eq "json") {
+        Apply-JsonConfig -TargetFile $api.configFile -TemplateFile $template
+    } elseif ($api.configType -eq "webconfig") {
+        Apply-WebConfig -TargetWebConfig $api.configFile -TemplateFile $template
+    } else {
+        Write-Warning "  Tipo de config desconhecido: $($api.configType)"
+        continue
+    }
+
+    Write-Host "  [CONFIG] OK -> $($api.configFile)" -ForegroundColor Green
+}
+
+# =============================================================================
+# PASSO 4 - Abrir Visual Studio
+# =============================================================================
+if ($OpenVisualStudio) {
+    Write-Host "`n[4/4] Abrindo Visual Studio..." -ForegroundColor Yellow
+
+    $openedBatches = @{}
+
+    foreach ($api in $config.apis) {
+        if (-not $api.batchOpen) {
+            Write-Host "  [$($api.name)] Sem .bat configurado, pulando." -ForegroundColor DarkGray
+            continue
+        }
+
+        if ($openedBatches.ContainsKey($api.batchOpen)) {
+            Write-Host "  [$($api.name)] Batch ja executado, pulando." -ForegroundColor DarkGray
+            continue
+        }
+
+        if (-not (Test-Path $api.batchOpen)) {
+            Write-Warning "  Arquivo .bat nao encontrado: $($api.batchOpen)"
+            continue
+        }
+
+        Write-Host "  [$($api.name)] Abrindo na desktop $($api.desktop)..." -ForegroundColor DarkGray
+        Start-Process -FilePath $api.batchOpen
+        $openedBatches[$api.batchOpen] = $true
+        Start-Sleep -Seconds 3
+    }
+} else {
+    Write-Host "`n[4/4] Abrir VS ignorado (-OpenVisualStudio nao informado)" -ForegroundColor DarkGray
+}
+
+# =============================================================================
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  CONCLUIDO: Ambiente $($Environment.ToUpper()) / $Client pronto!" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
