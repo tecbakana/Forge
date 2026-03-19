@@ -1,0 +1,35 @@
+{
+  "_comentario": "Template API1 - ambiente DEVELOPER. Inclua SOMENTE as chaves que mudam entre ambientes. O restante do appsettings.json original é preservado via deep merge.",
+
+  "ConnectionStrings": {
+    "<NOME_CONEXAO>": "<CONNECTION_STRING_DEVELOPER>"
+  },
+
+  "<SECAO_CONFIG>": {
+    "<CHAVE_1>": "<VALOR_DEVELOPER>",
+    "<CHAVE_2>": "<VALOR_DEVELOPER>"
+  }
+}
+
+// =============================================================================
+// COMO PREENCHER:
+//
+// 1. Abra o appsettings.json atual da API1
+// 2. Identifique quais chaves mudam entre developer / homolog / master
+// 3. Copie APENAS essas chaves para cá com os valores corretos
+//
+// Exemplo real:
+// {
+//   "ConnectionStrings": {
+//     "DefaultDB": "Server=localhost;Database=MinhaDB_Dev;User Id=sa;Password=dev123;"
+//   },
+//   "AppConfig": {
+//     "BaseUrl":    "http://localhost:5001",
+//     "LogLevel":   "Debug",
+//     "Environment":"Development"
+//   }
+// }
+//
+// O script faz deep merge: chaves não listadas aqui ficam intactas no arquivo original.
+// Remova o bloco de comentários "//" antes de usar — JSON não suporta comentários.
+// =============================================================================

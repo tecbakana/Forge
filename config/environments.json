@@ -1,0 +1,76 @@
+{
+	"apis": [
+		{
+			"name": "<API NAME>",
+			"configType": "json",
+			"configFile": "<CONFIG_FILE_PATH>",
+			"gitRepo": "<GIT_REPO_PATH>",
+			"desktop": 1,
+			"batchOpen": "<DRIVE_LETTER>:\\DevAutomation\\batches\\open-solution.bat",
+			"clients": [
+				"default",
+				"client1",
+				"client2",
+				"client3"
+			]
+		}
+	],
+	"branches": [
+		"developer",
+		"homolog",
+		"master"
+	],
+	"servers": {
+		"developer": {
+			"host": "<SERVIDOR>",
+			"user": "<USUARIO>",
+			"password": "<SENHA_DO_SERVIDOR>",
+			"apis": [
+				{
+					"name": "<NOME_DO_PROJETO>",
+					"configPath": "<CAMINHO_DO_PROJETO>",
+					"configType": "json"
+				},
+				{
+					"name": "<NOME_DO_PROJETO>",
+					"configPath": "<CAMINHO_DO_PROJETO>",
+					"configType": "json"
+				}
+			]
+		},
+		"homolog": {
+			"host": "<SERVIDOR>",
+			"user": "<USUARIO>",
+			"password": "<SENHA_DO_SERVIDOR>",
+			"apis": [
+				{
+					"name": "<NOME_DO_PROJETO>",
+					"configPath": "<CAMINHO_DO_PROJETO>",
+					"configType": "json"
+				},
+				{
+					"name": "<NOME_DO_PROJETO>",
+					"configPath": "<CAMINHO_DO_PROJETO>",
+					"configType": "json"
+				}
+			]
+		},
+		"master": {
+			"host": "<SERVIDOR>",
+			"user": "<USUARIO>",
+			"password": "<SENHA_DO_SERVIDOR>",
+			"apis": [
+				{
+					"name": "<NOME_DO_PROJETO>",
+					"configPath": "<CAMINHO_DO_PROJETO>",
+					"configType": "json"
+				},
+				{
+					"name": "<NOME_DO_PROJETO>",
+					"configPath": "<CAMINHO_DO_PROJETO>",
+					"configType": "json"
+				}
+			]
+		},
+	}
+}
