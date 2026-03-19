@@ -97,10 +97,7 @@ DevAutomation\
 │   ├── go-master.bat              ← troca completa para master
 │   ├── reload-config-only.bat     ← só reaplica configs, sem git/VS
 │   ├── start-panel.bat            ← inicia o painel web (localhost:8080)
-│   ├── open-taas.bat              ← abre solution TaaS no VS
-│   ├── open-taxenginereforma.bat  ← abre solution TaxEngineReforma no VS
-│   ├── open-taxengine.bat         ← abre solution TaxEngine no VS
-│   └── open-cockpit.bat           ← abre solution Cockpit no VS
+│   ├── open-[SOLUTION NAME].bat     ← abre solution [SOLUTION NAME] no VS
 ├── templates\
 │   └── {NomeDaAPI}\
 │       ├── developer\
