@@ -3,6 +3,11 @@ config/state.json
 
 # Backups locais
 *.BKP
+*[Bb]kp*
+*.bakup
+*Bkp*
+*_bkp*
+* - Copia.*
 scripts/testBank_1.ps1
 
 # Pasta legada (antiga estrutura nested do git)
