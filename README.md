@@ -1,4 +1,4 @@
-# DevAutomation — Automação de Ambientes de Desenvolvimento com IA
+# DevAutomation — Automação de Ambientes de Desenvolvimento com IA ![.NET](https://img.shields.io/badge/.NET-6-blue) ![AI](https://img.shields.io/badge/AI-LLM-green)
 
 Ferramenta para automatizar o gerenciamento de múltiplas APIs .NET entre diferentes ambientes (developer, homolog, produção), incluindo operações de configuração, git e execução — com suporte a controle via interface web e agente de IA.
 
