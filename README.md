@@ -74,7 +74,7 @@ Interface local para:
 - Uso de IA como interface operacional (não apenas assistente)  
 - Integração com múltiplos repositórios e projetos simultaneamente  
 
-## Guia de Instalação e Uso
+## Guia de Instalação e Uso 
 
 ## Estrutura de Pastas
 
