@@ -700,31 +700,6 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-  
-  .agent-msg {
-  max-width: 80%;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 12px;
-  line-height: 1.6;
-}
-.agent-msg.agent {
-  background: rgba(79,158,255,0.08);
-  border: 1px solid rgba(79,158,255,0.2);
-  color: var(--text);
-  align-self: flex-start;
-}
-.agent-msg.user {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  align-self: flex-end;
-}
-.agent-msg.thinking {
-  color: var(--muted);
-  font-style: italic;
-  align-self: flex-start;
-}
 </style>
 </head>
 <body>
@@ -732,9 +707,7 @@
 <header>
   <div class="logo">
     <div class="logo-icon">⚡</div>
-    <div class="logo-text">Dev<span>Panel</span><button class="btn btn-ghost" onclick="restartServer()" style="font-size:11px;padding:5px 10px">
-  ↺ Restart
-</button></div>
+    <div class="logo-text">Dev<span>Panel</span></div>
   </div>
   <div class="header-right">
     <span class="clock" id="clock">--:--:--</span>
@@ -780,9 +753,6 @@
       <button class="btn btn-ghost" onclick="runSwitch(false, true)">
         ↻ Só Configs
       </button>
-	  <button class="btn btn-ghost" onclick="pullServerConfig()">
-		⬇ Puxar Config do Servidor
-	  </button>
       <div class="toggle-group">
         <button class="toggle-pill on" id="tog-git"    onclick="toggleOpt(this, 'git')">
           <div class="tog-dot"></div> Git Pull
@@ -801,74 +771,8 @@
     <div class="api-grid" id="api-grid">
       <!-- preenchido via JS -->
     </div>
-	<!-- ── GIT PANEL ── -->
-	<p class="section-title" style="margin-top:24px">Git</p>
 
-	<!-- Ahead/Behind por repo -->
-	<div id="git-ab-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:20px"></div>
-
-	<!-- Seletor de API para status/commit -->
-	<div class="action-bar" style="flex-wrap:wrap;gap:10px;margin-bottom:16px">
-	  <span class="action-label">API</span>
-	  <div id="git-api-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-	  <div style="margin-left:auto;display:flex;gap:8px">
-		<button class="btn btn-ghost" onclick="loadGitStatus()">⟳ Ver Status</button>
-		<button class="btn btn-danger btn-sm" onclick="discardChanges()">✕ Descartar</button>
-	  </div>
-	</div>
-
-	<!-- Relatório de arquivos alterados -->
-	<div id="git-status-panel" style="display:none;margin-bottom:20px">
-	  <div id="git-file-list" style="display:flex;flex-direction:column;gap:6px"></div>
-	</div>
-
-	<!-- Commit -->
-	<div class="action-bar" style="gap:10px;align-items:center">
-	  <span class="action-label">COMMIT</span>
-	  <input id="commit-msg" type="text" placeholder="Mensagem do commit..."
-		style="flex:1;background:#090b10;border:1px solid var(--border);border-radius:6px;
-			   color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 12px;outline:none;
-			   transition:border-color .15s"
-		onfocus="this.style.borderColor='rgba(79,158,255,.4)'"
-		onblur="this.style.borderColor='var(--border)'"
-		onkeydown="if(event.key==='Enter') commitChanges()">
-	  <button class="btn btn-primary" onclick="commitChanges()">✓ Commit</button>
-	</div>
-
-<!-- ── AGENTE ── -->
-
-<p class="section-title" style="margin-top:24px">🤖 DevAgent</p>
-
-<div id="agent-chat" style="
-  background:var(--surface);border:1px solid var(--border);border-radius:10px;
-  display:flex;flex-direction:column;height:320px;overflow:hidden">
-
-  <!-- Mensagens -->
-  <div id="agent-messages" style="
-    flex:1;overflow-y:auto;padding:16px;
-    display:flex;flex-direction:column;gap:10px;
-    scrollbar-width:thin;scrollbar-color:var(--border) transparent">
-    <div class="agent-msg agent" style="align-self:flex-start">
-      Olá! Sou o DevAgent. Posso trocar ambientes, verificar status git, listar branches e mais. Como posso ajudar?
-    </div>
   </div>
-
-  <!-- Input -->
-  <div style="border-top:1px solid var(--border);padding:10px 12px;display:flex;gap:8px">
-    <input id="agent-input" type="text"
-      placeholder="Ex: troca para homolog com pull..."
-      style="flex:1;background:#090b10;border:1px solid var(--border);border-radius:6px;
-             color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 12px;outline:none;
-             transition:border-color .15s"
-      onfocus="this.style.borderColor='rgba(79,158,255,.4)'"
-      onblur="this.style.borderColor='var(--border)'"
-      onkeydown="if(event.key==='Enter') sendAgentMessage()">
-    <button class="btn btn-primary" onclick="sendAgentMessage()" style="white-space:nowrap">
-      Enviar
-    </button>
-  </div>
-</div>
-</div>
 
   <!-- ── SIDE PANEL ── -->
   <div class="side-panel">
@@ -934,210 +838,14 @@ const state = {
   opts: { git: true, vs: true, close: true }
 };
 
-
-// =============================================================================
-// GIT
-// =============================================================================
-let gitSelectedApi = null;
-
-async function loadGitAheadBehind() {
-  try {
-    const res  = await fetch(`${API_BASE}/git/aheadbehind`);
-    const data = await res.json();
-    const grid = document.getElementById('git-ab-grid');
-
-    grid.innerHTML = data.map(item => {
-      const ab  = item.aheadBehind;
-      const st  = ab.status;
-      const col = st === 'synced' ? 'var(--green)' : st === 'behind' ? 'var(--yellow)' : 'var(--accent)';
-      const icon= st === 'synced' ? '✓' : st === 'behind' ? '↓' : '↑';
-      return `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-family:var(--sans);font-weight:700;font-size:13px">${item.name}</span>
-            <span style="color:${col};font-size:12px">${icon} ${st}</span>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">
-            branch: <span style="color:var(--accent)">${ab.branch}</span>
-            &nbsp;·&nbsp; ↑${ab.ahead} ahead &nbsp;·&nbsp; ↓${ab.behind} behind
-          </div>
-          <div style="font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-               title="${ab.lastCommit}">${ab.lastCommit}</div>
-        </div>`;
-    }).join('');
-  } catch(e) {
-    log('Erro ao carregar ahead/behind: ' + e.message, 'error');
-  }
-}
-
-async function restartServer() {
-  log('Reiniciando servidor...', 'warn');
-  try {
-    await fetch(`${API_BASE}/restart`, { method: 'POST' });
-  } catch(e) {
-    // esperado — conexão cai quando o servidor reinicia
-  }
-  setTimeout(() => {
-    log('Reconectando...', 'info');
-    window.location.reload();
-  }, 3000);
-}
-
-function buildGitApiChips() {
-  if (!config) return;
-  const el = document.getElementById('git-api-chips');
-  // deduplica por gitRepo
-  const seen = new Set();
-  const apis = config.apis.filter(a => {
-    if (seen.has(a.gitRepo)) return false;
-    seen.add(a.gitRepo); return true;
-  });
-  el.innerHTML = apis.map((a,i) =>
-    `<button class="chip api-chip ${i===0?'active':''}" onclick="selectGitApi('${a.name}',this)">${a.name}</button>`
-  ).join('');
-  gitSelectedApi = apis[0]?.name;
-}
-
-function selectGitApi(name, btn) {
-  gitSelectedApi = name;
-  document.querySelectorAll('#git-api-chips .chip').forEach(c => c.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('git-status-panel').style.display = 'none';
-}
-
-async function loadGitStatus() {
-  if (!gitSelectedApi) { showToast('Selecione uma API.', 'info'); return; }
-  log(`[GIT] Carregando status: ${gitSelectedApi}`, 'step');
-
-  try {
-    const res  = await fetch(`${API_BASE}/git/status?api=${gitSelectedApi}`);
-    const data = await res.json();
-    const item = data.find(d => d.name === gitSelectedApi);
-    if (!item) { showToast('Nenhum dado retornado.', 'warn'); return; }
-
-    const st    = item.status;
-    const panel = document.getElementById('git-status-panel');
-    const list  = document.getElementById('git-file-list');
-
-    if (!st.files || st.files.length === 0) {
-      list.innerHTML = `<div style="color:var(--green);font-size:12px;padding:10px 0">✓ Nenhuma alteração local em ${gitSelectedApi}</div>`;
-    } else {
-      list.innerHTML = st.files.map(f => {
-        const typeCol = f.type==='modified'?'var(--yellow)':f.type==='deleted'?'var(--red)':'var(--green)';
-        const typeTag = f.type==='modified'?'M':f.type==='deleted'?'D':f.type==='added'?'A':'?';
-        const diffHtml = f.diff ? formatDiff(f.diff) : '';
-        const diffId   = 'diff_' + Math.random().toString(36).substr(2,6);
-        return `
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer"
-                 onclick="toggleDiff('${diffId}')">
-              <span style="color:${typeCol};font-weight:700;font-size:12px;width:14px">${typeTag}</span>
-              <span style="font-size:11px;flex:1">${f.path}</span>
-              <span style="color:var(--muted);font-size:10px">${f.diff?'▼ diff':''}</span>
-            </div>
-            ${diffHtml ? `<div id="${diffId}" style="display:none;border-top:1px solid var(--border);
-              padding:10px 14px;background:#090b10;font-size:10px;line-height:1.7;
-              overflow-x:auto;max-height:240px;overflow-y:auto">${diffHtml}</div>` : ''}
-          </div>`;
-      }).join('');
-    }
-
-    panel.style.display = 'block';
-    log(`[GIT] ${st.files.length} arquivo(s) alterado(s) em ${gitSelectedApi}`, st.files.length > 0 ? 'warn' : 'success');
-  } catch(e) {
-    log('Erro ao carregar status git: ' + e.message, 'error');
-  }
-}
-
-function toggleDiff(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
-function formatDiff(diff) {
-  return diff.split('\n').map(line => {
-    if (line.startsWith('+') && !line.startsWith('+++'))
-      return `<span style="color:#2ecc8a">${escHtml(line)}</span>`;
-    if (line.startsWith('-') && !line.startsWith('---'))
-      return `<span style="color:#ff4f6a">${escHtml(line)}</span>`;
-    if (line.startsWith('@@'))
-      return `<span style="color:var(--accent)">${escHtml(line)}</span>`;
-    return `<span style="color:var(--muted)">${escHtml(line)}</span>`;
-  }).join('\n');
-}
-
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-async function commitChanges() {
-  if (!gitSelectedApi) { showToast('Selecione uma API.', 'info'); return; }
-  const msg = document.getElementById('commit-msg').value.trim();
-  if (!msg)  { showToast('Digite a mensagem do commit.', 'info'); return; }
-
-  log(`[GIT] Commitando ${gitSelectedApi}: "${msg}"`, 'step');
-
-  try {
-    const res    = await fetch(`${API_BASE}/git/commit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api: gitSelectedApi, message: msg })
-    });
-    const result = await res.json();
-
-    if (result.success) {
-      showToast('Commit realizado!', 'success');
-      log('[GIT] Commit OK: ' + (result.results?.[0]?.result?.output || ''), 'success');
-      document.getElementById('commit-msg').value = '';
-      document.getElementById('git-status-panel').style.display = 'none';
-      await loadGitAheadBehind();
-    } else {
-      showToast('Erro no commit.', 'error');
-      log('[GIT] Erro: ' + JSON.stringify(result), 'error');
-    }
-  } catch(e) {
-    log('Erro ao commitar: ' + e.message, 'error');
-  }
-}
-
-async function discardChanges() {
-  if (!gitSelectedApi) { showToast('Selecione uma API.', 'info'); return; }
-  if (!confirm(`Descartar TODAS as alterações locais em ${gitSelectedApi}? Esta ação é irreversível.`)) return;
-
-  log(`[GIT] Descartando alterações em ${gitSelectedApi}...`, 'warn');
-
-  try {
-    const res = await fetch(`${API_BASE}/git/discard`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api: gitSelectedApi })
-    });
-    const result = await res.json();
-
-    if (result.success) {
-      showToast('Alterações descartadas.', 'success');
-      log('[GIT] Descarte concluído.', 'success');
-      document.getElementById('git-status-panel').style.display = 'none';
-    } else {
-      showToast('Erro ao descartar.', 'error');
-    }
-  } catch(e) {
-    log('Erro ao descartar: ' + e.message, 'error');
-  }
-}
-
 // =============================================================================
 // INIT
 // =============================================================================
-
 async function init() {
   startClock();
   await loadConfig();
   await refreshStatus();
-  await loadGitAheadBehind();
-  buildGitApiChips();
   setInterval(refreshStatus, 10000);
-  setInterval(loadGitAheadBehind, 30000);
 }
 
 function startClock() {
@@ -1186,49 +894,6 @@ async function loadConfig() {
   }
 }
 
-
-async function pullServerConfig() {
-  // Só faz sentido para homolog e master — developer não tem servidor
-  if (state.environment === 'developer') {
-    showToast('Developer não tem servidor remoto configurado.', 'info');
-    return;
-  }
-
-  if (!confirm(`Buscar config do servidor ${state.environment.toUpperCase()} e salvar como template "${state.client}"?`)) return;
-
-  log(`[SERVER] Buscando config de ${state.environment} / ${state.client}...`, 'step');
-
-  try {
-    const res = await fetch(`${API_BASE}/server/pullconfig`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        environment: state.environment,
-        client:      state.client,
-        api:         state.apis
-      })
-    });
-
-    const result = await res.json();
-
-    if (result.success) {
-      const ok   = result.results.filter(r => r.success).length;
-      const fail = result.results.filter(r => !r.success).length;
-      showToast(`Config importado: ${ok} OK, ${fail} falhas.`, ok > 0 ? 'success' : 'error');
-      log(`[SERVER] ${ok} arquivo(s) importado(s) com sucesso.`, 'success');
-      if (fail > 0) {
-        result.results.filter(r => !r.success).forEach(r => {
-          log(`[SERVER] Falha em ${r.name}: ${r.error}`, 'error');
-        });
-      }
-    } else {
-      showToast('Erro: ' + result.error, 'error');
-      log('[SERVER] Erro: ' + result.error, 'error');
-    }
-  } catch(e) {
-    log('Erro ao conectar ao servidor: ' + e.message, 'error');
-  }
-}
 // =============================================================================
 // API CARDS
 // =============================================================================
@@ -1529,67 +1194,7 @@ function showToast(msg, type = 'info') {
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }
-// =============================================================================
-// DEVAGENT
-// =============================================================================
-let agentHistory = [];
 
-function appendAgentMessage(text, role) {
-  const el  = document.createElement('div');
-  el.className = `agent-msg ${role}`;
-  el.textContent = text;
-  const container = document.getElementById('agent-messages');
-  container.appendChild(el);
-  container.scrollTop = container.scrollHeight;
-  return el;
-}
-
-async function sendAgentMessage() {
-  const input = document.getElementById('agent-input');
-  const msg   = input.value.trim();
-  if (!msg) return;
-
-  input.value = '';
-  appendAgentMessage(msg, 'user');
-
-  const thinking = appendAgentMessage('Pensando...', 'thinking');
-
-  try {
-    const res = await fetch(`${API_BASE}/agent`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ message: msg, history: agentHistory })
-    });
-
-    const data = await res.json();
-    thinking.remove();
-
-    if (data.type === 'error') {
-      appendAgentMessage('Erro: ' + data.text, 'agent');
-      return;
-    }
-
-    appendAgentMessage(data.text, 'agent');
-
-  // Se executou tool call, limpa histórico para evitar formato inválido
-	if (data.action) {
-	  agentHistory = [];
-	} else {
-	  agentHistory.push({ role: 'user',  parts: [{ text: msg }] });
-	  agentHistory.push({ role: 'model', parts: [{ text: data.text }] });
-	}
-
-    // Se executou uma ação, atualiza o status
-    if (data.action) {
-      await refreshStatus();
-      await loadGitAheadBehind();
-    }
-
-  } catch(e) {
-    thinking.remove();
-    appendAgentMessage('Erro de conexão: ' + e.message, 'agent');
-  }
-}
 // =============================================================================
 // START
 // =============================================================================

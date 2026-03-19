@@ -34,6 +34,9 @@ $stateFile    = "T:\DevAutomation\config\state.json"
 . "T:\DevAutomation\scripts\Git-Operations.ps1"
 . "T:\DevAutomation\scripts\Server-Operations.ps1"
 
+# Dot-source
+. "T:\DevAutomation\scripts\Invoke-GeminiAgent.ps1"
+
 # =============================================================================
 # Helpers
 # =============================================================================
@@ -75,6 +78,120 @@ function Json($obj) { $obj | ConvertTo-Json -Depth 10 -Compress }
 # =============================================================================
 # Handlers
 # =============================================================================
+
+function Handle-Agent($ctx) {
+    $body    = Read-Body $ctx | ConvertFrom-Json -AsHashtable
+    $message = $body["message"]
+    $history = if ($body["history"]) { $body["history"] } else { @() }
+
+    # Lê config
+    $raw      = Get-Content (Join-Path $configDir "environments.json") -Raw
+    $clean    = $raw -replace '(?m)^\s*//.*$', ''
+    $config   = $clean | ConvertFrom-Json
+    $apiKey   = $config.agent.apiKey
+    $model    = $config.agent.model
+	$url      = $config.agent.url
+
+    # Lê estado atual
+    $state    = Get-State
+    $apiNames = ($config.apis | ForEach-Object { $_.name }) -join ", "
+
+    # Contexto do sistema para o Gemini
+    $systemCtx = @"
+Você é um assistente de ambiente de desenvolvimento chamado DevAgent.
+Responda sempre em português brasileiro, de forma concisa e direta.
+
+ESTADO ATUAL:
+- APIs disponíveis: $apiNames
+- Estado: $($state | ConvertTo-Json -Compress)
+
+REGRAS:
+- Ao executar ações, confirme o que foi feito de forma resumida
+- Se o usuário pedir algo ambíguo, pergunte antes de executar
+- Para switch de ambiente sem especificar APIs, use all
+- Nunca invente dados — use sempre as ferramentas para buscar informações reais
+"@
+
+    # 1. Chama o Gemini
+    $geminiResp = Invoke-GeminiAgent `
+        -Message       $message `
+        -ApiKey        $apiKey `
+        -Model         $model `
+            -Url         $url `
+        -History       $history `
+        -SystemContext $systemCtx
+    Write-Host "teste $($url)$($model)"
+    if ($geminiResp.type -eq "error") {
+        Write-Response $ctx (Json @{ type = "error"; text = $geminiResp.error })
+        return
+    }
+
+    # 2. É uma tool call?
+    if ($geminiResp.type -eq "toolCall") {
+        $toolName = $geminiResp.name
+        $args     = $geminiResp.args
+        $result   = $null
+
+        switch ($toolName) {
+            "switch_environment" {
+                $envArg     = $args.environment
+                $clientArg  = if ($args.client)      { $args.client }      else { "default" }
+                $apisArg    = if ($args.apis)         { $args.apis }        else { "all" }
+                $pullArg    = if ($args.gitPull)      { "-GitPull" }        else { "" }
+                $openArg    = if ($args.openVS)       { "-OpenVisualStudio" }  else { "" }
+                $closeArg   = if ($args.closeVS)      { "-CloseVisualStudio" } else { "" }
+                $forceArg   = if ($args.force)        { "-Force" }          else { "" }
+
+                $cmd = "& '$switchScript' -Environment '$envArg' -Client '$clientArg' -Api '$apisArg' $pullArg $openArg $closeArg $forceArg"
+                $out = Invoke-Expression $cmd 2>&1
+                $result = @{ output = ($out -join "`n") }
+            }
+            "get_git_status" {
+                $api    = $config.apis | Where-Object { $_.name -eq $args.api } | Select-Object -First 1
+                $result = Get-GitStatus -RepoPath $api.gitRepo
+            }
+            "get_git_ahead_behind" {
+                $result = @()
+                $config.apis | ForEach-Object {
+                    $ab = Get-GitAheadBehind -RepoPath $_.gitRepo
+                    $result += @{ name = $_.name; aheadBehind = $ab }
+                }
+            }
+            "list_branches" {
+                $api    = $config.apis | Where-Object { $_.name -eq $args.api } | Select-Object -First 1
+                $result = Get-GitBranches -RepoPath $api.gitRepo
+            }
+            "get_current_status" {
+                $result = $state
+            }
+        }
+
+        # 3. Manda resultado de volta para o Gemini gerar resposta final
+        $historyAtual = $history + @(
+            @{ role = "user";  parts = @(@{ text = $message }) },
+            @{ role = "model"; parts = @(@{ functionCall = @{ name = $toolName; args = $args } }) }
+        )
+
+        $finalResp = Send-GeminiToolResult `
+            -ApiKey        $apiKey `
+            -Model         $model `
+            -Url         $url `
+            -History       $historyAtual `
+            -ToolName      $toolName `
+            -ToolResult    $result `
+            -SystemContext $systemCtx
+
+        Write-Response $ctx (Json @{
+            type   = "text"
+            text   = $finalResp.text
+            action = $toolName
+        })
+        return
+    }
+    Write-Host "  [AGENT] Enviando para Gemini: $($body | ConvertTo-Json -Depth 5 -Compress)" -ForegroundColor DarkGray
+    # 4. Resposta direta em texto
+    Write-Response $ctx (Json @{ type = "text"; text = $geminiResp.text })
+}
 
 function Handle-Restart($ctx) {
     Write-Response $ctx (Json @{ success = $true; message = "Reiniciando..." })
@@ -362,6 +479,7 @@ function Route($ctx) {
 		"^/api/git/discard$"     { Handle-GitDiscard      $ctx }
 		"^/api/server/pullconfig$" { Handle-ServerPullConfig $ctx }
 		"^/api/restart$" { Handle-Restart $ctx }
+		"^/api/agent$" { Handle-Agent $ctx }
         default            { Handle-Static $ctx }
     }
 }

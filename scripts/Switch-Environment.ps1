@@ -140,37 +140,32 @@ if ($GitPull) {
             return
         }
 
-        Push-Location $repo
+		Push-Location $repo
 
-        $dirty = git status --porcelain 2>&1
-		if ($dirty -and -not $Force) {
-			Write-Warning "  Alteracoes nao commitadas em $repo"
-			Write-Warning "  Use -Force para ignorar ou faca commit/stash antes."
-			Pop-Location
-			$processedRepos[$repo] = $true  # marca como processado para nao tentar de novo
-			return                         # pula só o git, script continua nos passos 3 e 4
-		}
-
-        if ($dirty -and $Force) {
-            Write-Host "  [GIT] -Force ativo: ignorando alteracoes locais" -ForegroundColor DarkYellow
-        }
-
-        git fetch origin 2>&1 | Out-Null
-        git checkout --force $Environment 2>&1 | Out-Null
-		
-		# Antes do git pull, descarta só os arquivos de config monitorados
+		# 1. Primeiro descarta os arquivos de config monitorados
 		$config.apis | ForEach-Object {
 			$arquivo = [string]$_.configFile
 			if (-not [string]::IsNullOrWhiteSpace($arquivo)) {
 				git checkout -- $arquivo 2>&1 | Out-Null
 			}
 		}
-        git pull origin $Environment 2>&1  | Out-Null
 
-        Write-Host "  [GIT] Branch '$Environment' atualizada" -ForegroundColor Green
+		# 2. Agora verifica se ainda há alterações (de outros arquivos)
+		$dirty = git status --porcelain 2>&1
+		if ($dirty -and -not $Force) {
+			Write-Warning "  Alteracoes nao commitadas em $repo"
+			Write-Warning "  Use -Force para ignorar ou faca commit/stash antes."
+			Pop-Location
+			$processedRepos[$repo] = $true
+			return
+		}
 
-        Pop-Location
-        $processedRepos[$repo] = $true
+		# 3. Fetch, checkout e pull
+		git fetch origin 2>&1 | Out-Null
+		git reset --hard origin/$Environment 2>&1 | Out-Null
+		Write-Host "  [GIT] Branch '$Environment' atualizada" -ForegroundColor Green
+		Pop-Location
+		$processedRepos[$repo] = $true
     }
 } else {
     Write-Host "`n[2/4] Git pull ignorado" -ForegroundColor DarkGray
