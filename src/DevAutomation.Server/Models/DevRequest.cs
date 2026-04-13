@@ -1,0 +1,47 @@
+using System.Text.Json.Serialization;
+
+namespace DevAutomation.Models;
+
+public class DevRequest
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    // Campos usados pelo frontend (devreq-list)
+    [JsonPropertyName("api")]
+    public string Api { get; set; } = "";          // nome do projeto/api
+
+    [JsonPropertyName("tipo")]
+    public string Tipo { get; set; } = "feature";  // feature | bugfix | config
+
+    [JsonPropertyName("impacto")]
+    public string Impacto { get; set; } = "baixo"; // baixo | medio | alto
+
+    [JsonPropertyName("descricao")]
+    public string Descricao { get; set; } = "";
+
+    [JsonPropertyName("detalhes")]
+    public string? Detalhes { get; set; }
+
+    [JsonPropertyName("url_externa")]
+    public string? UrlExterna { get; set; }
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = "pendente";
+    // pendente | aguardando_aprovacao | in_progress | done | error
+
+    [JsonPropertyName("resultado")]
+    public string? Resultado { get; set; }
+
+    [JsonPropertyName("prompt_agente")]
+    public string? PromptAgente { get; set; }
+
+    [JsonPropertyName("diretorio_alvo")]
+    public string? DiretorioAlvo { get; set; }
+
+    [JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyName("timestamp_atualizacao")]
+    public DateTime? TimestampAtualizacao { get; set; }
+}

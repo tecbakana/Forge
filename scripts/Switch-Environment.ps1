@@ -219,9 +219,9 @@ if ($OpenVisualStudio) {
     $openScript = "T:\DevAutomation\scripts\Open-Solutions.ps1"
 
     if (Test-Path $openScript) {
-        # Se foi filtrada so uma API, passa o nome para o Open-Solutions abrir so ela
-        if ($Api -ne "all" -and ($Api -split ",").Count -eq 1) {
-            Start-Process pwsh -ArgumentList "-ExecutionPolicy Bypass -File `"$openScript`" -Api $($Api.Trim())"
+        # Passa o filtro de APIs para o Open-Solutions respeitar a selecao do usuario
+        if ($Api -ne "all") {
+            Start-Process pwsh -ArgumentList "-ExecutionPolicy Bypass -File `"$openScript`" -Api `"$($Api.Trim())`""
         } else {
             Start-Process pwsh -ArgumentList "-ExecutionPolicy Bypass -File `"$openScript`""
         }

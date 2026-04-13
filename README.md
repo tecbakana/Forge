@@ -80,6 +80,16 @@ Interface local para:
 
 ```
 DevAutomation\
+├── Forge.sln                      ← solução Visual Studio consolidada
+├── src\
+│   └── DevAutomation.Server\      ← servidor ASP.NET Core 9
+│       ├── DevAutomation.Server.csproj
+│       ├── Program.cs
+│       ├── Controllers\
+│       ├── Services\
+│       ├── Models\
+│       ├── Hubs\
+│       └── appsettings.json
 ├── config\
 │   ├── environments.json          ← configuração central (APIs, branches, servidores, agente IA)
 │   └── state.json                 ← estado atual em tempo de execução (gerado automaticamente)
@@ -113,6 +123,31 @@ DevAutomation\
 │   └── index.html                 ← interface web do painel
 └── tools\
     └── VirtualDesktop11.exe       ← utilitário para controle de virtual desktops
+```
+
+---
+
+## Abrindo a Solução no Visual Studio
+
+A solução consolidada `Forge.sln` na raiz do projeto contém o servidor DevAutomation:
+
+**Opção 1: Via Visual Studio**
+1. Abra Visual Studio 2022 ou superior
+2. Arquivo → Abrir Solução
+3. Navegue até `T:\DevAutomation\Forge.sln` e abra
+4. Pressione `Ctrl+Shift+B` para compilar
+
+**Opção 2: Via linha de comando**
+```cmd
+cd T:\DevAutomation
+devenv Forge.sln
+```
+
+**Opção 3: Via dotnet CLI**
+```cmd
+cd T:\DevAutomation
+dotnet build Forge.sln
+dotnet run --project src/DevAutomation.Server
 ```
 
 ---

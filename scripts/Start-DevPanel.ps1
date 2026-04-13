@@ -193,6 +193,90 @@ REGRAS:
     Write-Response $ctx (Json @{ type = "text"; text = $geminiResp.text })
 }
 
+function Handle-DevRequests($ctx) {
+    $raw    = Get-Content (Join-Path $configDir "environments.json") -Raw
+    $config = ($raw -replace '(?m)^\s*//.*$','') | ConvertFrom-Json
+
+    $todas = [System.Collections.Generic.List[object]]::new()
+    $seen  = @{}
+
+    if (-not $config -or -not $config.apis) {
+        Write-Response $ctx "[]"
+        return
+    }
+
+    foreach ($apiDef in $config.apis) {
+        $repo    = "$($apiDef.gitRepo)"
+        $apiName = "$($apiDef.name)"
+        if ([string]::IsNullOrWhiteSpace($repo) -or $seen.ContainsKey($repo)) { continue }
+        $seen[$repo] = $true
+
+        $queuePath = Join-Path $repo "dev-requests\queue.json"
+        if (-not (Test-Path $queuePath)) { continue }
+
+        try {
+            $content = Get-Content $queuePath -Raw
+            if ([string]::IsNullOrWhiteSpace($content)) { continue }
+
+            $items = $content | ConvertFrom-Json -AsHashtable
+            if (-not $items) { continue }
+
+            @($items) | ForEach-Object {
+                if (-not $_) { return }
+                $_["api"] = $apiName
+                $todas.Add($_)
+            }
+        } catch {
+            Write-Warning "  [DEV-REQUEST] Erro ao ler $queuePath`: $_"
+        }
+    }
+
+    Write-Response $ctx (ConvertTo-Json -InputObject @($todas.ToArray()) -Depth 10 -Compress)
+}
+
+function Handle-DevRequestAction($ctx) {
+    $body   = Read-Body $ctx | ConvertFrom-Json -AsHashtable
+    $id     = $body["id"]
+    $action = $body["action"]   # "implementar" | "ignorar"
+    $api    = $body["api"]
+
+    $raw    = Get-Content (Join-Path $configDir "environments.json") -Raw
+    $config = ($raw -replace '(?m)^\s*//.*$','') | ConvertFrom-Json
+
+    $apiObj    = $config.apis | Where-Object { $_.name -eq $api } | Select-Object -First 1
+    $queuePath = Join-Path "$($apiObj.gitRepo)" "dev-requests\queue.json"
+
+    if (-not (Test-Path $queuePath)) {
+        Write-Response $ctx (Json @{ success = $false; error = "queue.json não encontrado" }) -StatusCode 404
+        return
+    }
+
+    $items = Get-Content $queuePath -Raw | ConvertFrom-Json
+    $item  = $items | Where-Object { $_.id -eq $id } | Select-Object -First 1
+
+    if (-not $item) {
+        Write-Response $ctx (Json @{ success = $false; error = "Request não encontrada" }) -StatusCode 404
+        return
+    }
+
+    $novoStatus = switch ($action) {
+        "ignorar"  { "ignorado" }
+        "aprovar"  { "pendente" }
+        default    { "em_andamento" }
+    }
+    $item.status = $novoStatus
+    $items | ConvertTo-Json -Depth 10 | Set-Content $queuePath -Encoding UTF8
+
+    if ($action -eq "implementar") {
+        $prompt = "Dev request do chat do $api`: $($item.descricao). Tipo: $($item.tipo). Impacto: $($item.impacto). Detalhes: $($item.detalhes). Implemente a alteracao necessaria no projeto."
+        $repoPath = "$($apiObj.gitRepo)"
+        Start-Process "wt" -ArgumentList "new-tab --title `"DevRequest`" --startingDirectory `"$repoPath`" pwsh -NoExit -Command `"claude '$prompt'`""
+        Write-Host "  [DEV-REQUEST] Abrindo Claude Code para: $($item.descricao)" -ForegroundColor Cyan
+    }
+
+    Write-Response $ctx (Json @{ success = $true; status = $novoStatus })
+}
+
 function Handle-Restart($ctx) {
     Write-Response $ctx (Json @{ success = $true; message = "Reiniciando..." })
     Start-Process pwsh -ArgumentList "-ExecutionPolicy Bypass -File `"T:\DevAutomation\scripts\Start-DevPanel.ps1`""
@@ -242,9 +326,14 @@ function Handle-Status($ctx) {
 
         $branch = "?"
         if (-not [string]::IsNullOrWhiteSpace($repo) -and -not $processedRepos.ContainsKey($repo)) {
-            Push-Location $repo
-            $branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
-            Pop-Location
+            try {
+                Push-Location $repo
+                $raw = git rev-parse --abbrev-ref HEAD 2>$null
+                $branch = if ($raw -and $raw -isnot [System.Management.Automation.ErrorRecord]) { "$raw".Trim() } else { "?" }
+                Pop-Location
+            } catch {
+                $branch = "?"
+            }
             $processedRepos[$repo] = $branch
         } elseif ($processedRepos.ContainsKey($repo)) {
             $branch = $processedRepos[$repo]
@@ -272,24 +361,35 @@ function Handle-Switch($ctx) {
     $openVS  = $body["openVisualStudio"]  -eq $true
     $closeVS = $body["closeVisualStudio"] -eq $true
 
-    # Monta argumentos para o Switch-Environment.ps1
-    $args = @("-Environment", $env, "-Client", $client)
-    if ($api -ne "all") { $args += @("-Api", $api) }
-    if ($gitP)    { $args += "-GitPull" }
-    if ($openVS)  { $args += "-OpenVisualStudio" }
-    if ($closeVS) { $args += "-CloseVisualStudio" }
+    # Monta argumentos para o Switch-Environment.ps1 (sem -OpenVisualStudio, tratado aqui)
+    $switchArgs = @("-Environment", $env, "-Client", $client)
+    if ($api -ne "all") { $switchArgs += @("-Api", $api) }
+    if ($gitP)    { $switchArgs += "-GitPull" }
+    if ($closeVS) { $switchArgs += "-CloseVisualStudio" }
 
     try {
-        $output = & powershell.exe -ExecutionPolicy Bypass -File $switchScript @args 2>&1
+        $output = & powershell.exe -ExecutionPolicy Bypass -File $switchScript @switchArgs 2>&1
         $messages = $output | ForEach-Object { $_.ToString() }
 
         # Salva estado: registra cliente aplicado por API
-        $configFile = Join-Path $configDir "environments.json"
-        $raw   = Get-Content $configFile -Raw
-        $clean = $raw -replace '(?m)^\s*//.*$', ''
-        $config = $clean | ConvertFrom-Json
-        foreach ($api in $config.apis) {
-            Set-State $api.name $client
+        $configRaw  = Get-Content (Join-Path $configDir "environments.json") -Raw
+        $configClean = $configRaw -replace '(?m)^\s*//.*$', ''
+        $configObj  = $configClean | ConvertFrom-Json
+        foreach ($cfgApi in $configObj.apis) {
+            Set-State $cfgApi.name $client
+        }
+
+        # Abre Visual Studio diretamente daqui (evita cadeia de processos aninhados)
+        $logFile = "T:\DevAutomation\vs-open.log"
+        "[$([datetime]::Now)] Handle-Switch: openVS=$openVS  api=$api" | Out-File $logFile -Append
+        if ($openVS) {
+            $openScript = "T:\DevAutomation\scripts\Open-Solutions.ps1"
+            "[$([datetime]::Now)] Iniciando Open-Solutions.ps1 com api=$api" | Out-File $logFile -Append
+            $vsArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $openScript)
+            if ($api -ne "all") { $vsArgs += @("-Api", $api) }
+            "[$([datetime]::Now)] vsArgs: $($vsArgs -join ' ')" | Out-File $logFile -Append
+            Start-Process pwsh -ArgumentList $vsArgs
+            "[$([datetime]::Now)] Start-Process pwsh disparado" | Out-File $logFile -Append
         }
 
         Write-Response $ctx (Json @{ success = $true; messages = $messages })
@@ -345,6 +445,39 @@ function Handle-SaveTemplate($ctx) {
     Write-Response $ctx (Json @{ success = $true; path = $path })
 }
 
+function Handle-Browse($ctx) {
+    $query = $ctx.Request.QueryString
+    $type  = if ($query["type"]) { $query["type"] } else { "folder" }
+
+    Add-Type -AssemblyName System.Windows.Forms | Out-Null
+
+    $selected = $null
+
+    if ($type -eq "file") {
+        $filter = if ($query["filter"]) { $query["filter"] } else { "All files (*.*)|*.*" }
+        $dialog = New-Object System.Windows.Forms.OpenFileDialog
+        $dialog.Filter = $filter
+        $dialog.Title  = "Selecionar arquivo"
+        $result = $dialog.ShowDialog()
+        if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+            $selected = $dialog.FileName
+        }
+    } else {
+        $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+        $dialog.Description = "Selecionar pasta"
+        $result = $dialog.ShowDialog()
+        if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+            $selected = $dialog.SelectedPath
+        }
+    }
+
+    if ($selected) {
+        Write-Response $ctx (Json @{ path = $selected })
+    } else {
+        Write-Response $ctx (Json @{ path = $null; cancelled = $true })
+    }
+}
+
 function Handle-Static($ctx) {
     $urlPath  = $ctx.Request.Url.AbsolutePath
     $filePath = if ($urlPath -eq "/") { Join-Path $panelDir "index.html" }
@@ -355,6 +488,11 @@ function Handle-Static($ctx) {
             ".html" { "text/html; charset=utf-8" }
             ".js"   { "application/javascript" }
             ".css"  { "text/css" }
+            ".jpg"  { "image/jpeg" }
+            ".jpeg" { "image/jpeg" }
+            ".png"  { "image/png" }
+            ".svg"  { "image/svg+xml" }
+            ".ico"  { "image/x-icon" }
             default { "text/plain" }
         }
         $content = Get-Content $filePath -Raw
@@ -452,6 +590,81 @@ function Handle-GitDiscard($ctx) {
 }
 
 # =============================================================================
+# Handle-RegisterApp / Handle-UnregisterApp
+# =============================================================================
+
+function Handle-RegisterApp($ctx) {
+    $body = Read-Body $ctx | ConvertFrom-Json -AsHashtable
+
+    $cfgFile = Join-Path $configDir "environments.json"
+    $raw     = Get-Content $cfgFile -Raw
+    $clean   = $raw -replace '(?m)^\s*//.*$', ''
+    $config  = $clean | ConvertFrom-Json
+
+    # Valida nome duplicado
+    $existe = $config.apis | Where-Object { $_.name -eq $body["name"] }
+    if ($existe) {
+        Write-Response $ctx (Json @{ success = $false; error = "API '$($body["name"])' ja cadastrada." }) -StatusCode 400
+        return
+    }
+
+    # Monta novo objeto
+    $novaApi = [ordered]@{
+        name         = $body["name"]
+        configType   = $body["configType"]
+        configFile   = $body["configFile"]
+        gitRepo      = $body["gitRepo"]
+        solutionPath = $body["solutionPath"]
+        desktop      = [int]$body["desktop"]
+        batchOpen    = "T:\DevAutomation\batches\open-solution.bat"
+        clients      = @("default")
+    }
+
+    # Adiciona ao array e salva
+    $lista = [System.Collections.Generic.List[object]]($config.apis)
+    $lista.Add([pscustomobject]$novaApi)
+    $config.apis = $lista.ToArray()
+    $config | ConvertTo-Json -Depth 10 | Set-Content $cfgFile -Encoding UTF8
+
+    # Cria estrutura de templates
+    $ext = if ($body["configType"] -eq "json") { "json" } else { "xml" }
+    foreach ($env in @("developer", "homolog", "master")) {
+        $dir = Join-Path $templatesDir "$($body["name"])\$env"
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        $defaultFile = Join-Path $dir "default.$ext"
+        if (-not (Test-Path $defaultFile)) {
+            if ($ext -eq "json") { "{}" | Set-Content $defaultFile -Encoding UTF8 }
+            else { "<configuration><appSettings></appSettings><connectionStrings></connectionStrings></configuration>" | Set-Content $defaultFile -Encoding UTF8 }
+        }
+    }
+
+    Write-Host "  [APP] Cadastrada: $($body["name"])" -ForegroundColor Green
+    Write-Response $ctx (Json @{ success = $true })
+}
+
+function Handle-UnregisterApp($ctx) {
+    $body = Read-Body $ctx | ConvertFrom-Json -AsHashtable
+    $nome = $body["name"]
+
+    $cfgFile = Join-Path $configDir "environments.json"
+    $raw     = Get-Content $cfgFile -Raw
+    $clean   = $raw -replace '(?m)^\s*//.*$', ''
+    $config  = $clean | ConvertFrom-Json
+
+    $config.apis = @($config.apis | Where-Object { $_.name -ne $nome })
+    $config | ConvertTo-Json -Depth 10 | Set-Content $cfgFile -Encoding UTF8
+
+    # Remove pasta de templates
+    $templateDir = Join-Path $templatesDir $nome
+    if (Test-Path $templateDir) {
+        Remove-Item $templateDir -Recurse -Force
+    }
+
+    Write-Host "  [APP] Removida: $nome" -ForegroundColor Yellow
+    Write-Response $ctx (Json @{ success = $true })
+}
+
+# =============================================================================
 # Router principal
 # =============================================================================
 
@@ -478,9 +691,14 @@ function Route($ctx) {
 		"^/api/git/commit$"      { Handle-GitCommit       $ctx }
 		"^/api/git/discard$"     { Handle-GitDiscard      $ctx }
 		"^/api/server/pullconfig$" { Handle-ServerPullConfig $ctx }
-		"^/api/restart$" { Handle-Restart $ctx }
-		"^/api/agent$" { Handle-Agent $ctx }
-        default            { Handle-Static $ctx }
+		"^/api/restart$"         { Handle-Restart         $ctx }
+		"^/api/agent$"           { Handle-Agent           $ctx }
+		"^/api/apps/register$"      { Handle-RegisterApp      $ctx }
+		"^/api/apps/unregister$"    { Handle-UnregisterApp    $ctx }
+		"^/api/browse$"             { Handle-Browse           $ctx }
+		"^/api/devrequests$"        { Handle-DevRequests      $ctx }
+		"^/api/devrequests/action$" { Handle-DevRequestAction $ctx }
+        default                  { Handle-Static          $ctx }
     }
 }
 

@@ -1,0 +1,128 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37027.9
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevAutomation.Server", "src\DevAutomation.Server\DevAutomation.Server.csproj", "{7F635602-87A2-40B8-8716-9AA5D21F8E60}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{C1001001-0001-0001-0001-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		config\AzureDB_limpmax.txt = config\AzureDB_limpmax.txt
+		config\environments - Copia.json = config\environments - Copia.json
+		config\environments.json = config\environments.json
+		config\state.json = config\state.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{C1001001-0001-0001-0001-000000000002}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Apply-Configs.ps1 = scripts\Apply-Configs.ps1
+		scripts\Git-Operations.ps1 = scripts\Git-Operations.ps1
+		scripts\Invoke-GeminiAgent.ps1 = scripts\Invoke-GeminiAgent.ps1
+		scripts\Open-Solutions.ps1 = scripts\Open-Solutions.ps1
+		scripts\Server-Operations.ps1 = scripts\Server-Operations.ps1
+		scripts\Start-DevPanel.ps1 = scripts\Start-DevPanel.ps1
+		scripts\Switch-Environment.ps1 = scripts\Switch-Environment.ps1
+		scripts\testBank_1.ps1 = scripts\testBank_1.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "panel", "panel", "{C1001001-0001-0001-0001-000000000003}"
+	ProjectSection(SolutionItems) = preProject
+		panel\index - Copia.html = panel\index - Copia.html
+		panel\index.html = panel\index.html
+		panel\logo_forge.jpg = panel\logo_forge.jpg
+		panel\marked.min.js = panel\marked.min.js
+		panel\projects.json = panel\projects.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "templates", "templates", "{C1001001-0001-0001-0001-000000000004}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "batches", "batches", "{C1001001-0001-0001-0001-000000000005}"
+	ProjectSection(SolutionItems) = preProject
+		batches\go-developer.bat = batches\go-developer.bat
+		batches\go-homolog.bat = batches\go-homolog.bat
+		batches\go-master.bat = batches\go-master.bat
+		batches\open-cockpit.bat = batches\open-cockpit.bat
+		batches\open-solution.bat = batches\open-solution.bat
+		batches\open-taas.bat = batches\open-taas.bat
+		batches\open-taxengine.bat = batches\open-taxengine.bat
+		batches\open-taxenginereforma.bat = batches\open-taxenginereforma.bat
+		batches\open-[SOLUTION NAME].bat = batches\open-[SOLUTION NAME].bat
+		batches\openVSWrapper.bat = batches\openVSWrapper.bat
+		batches\postmanTaaS.bat = batches\postmanTaaS.bat
+		batches\reload-config-only.bat = batches\reload-config-only.bat
+		batches\start-panel.bat = batches\start-panel.bat
+		batches\start-server.bat = batches\start-server.bat
+		batches\vsCockpit.bat = batches\vsCockpit.bat
+		batches\vsTaaS.bat = batches\vsTaaS.bat
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{C1001001-0001-0001-0001-000000000006}"
+	ProjectSection(SolutionItems) = preProject
+		tools\README.md = tools\README.md
+		tools\VirtualDesktop11.exe = tools\VirtualDesktop11.exe
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "wiki", "wiki", "{C1001001-0001-0001-0001-000000000007}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		wiki\linq-csharp.md = wiki\linq-csharp.md
+		README.md = README.md
+		vs-open.log = vs-open.log
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Itens de Solução", "Itens de Solução", "{380A7511-A354-6D7A-0CC0-8FA1F1BA7B6C}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+		vs-open.log = vs-open.log
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevAutomation.Server", "DevAutomation.Server\DevAutomation.Server.csproj", "{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Debug|x64.Build.0 = Debug|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Debug|x86.Build.0 = Debug|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Release|x64.ActiveCfg = Release|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Release|x64.Build.0 = Release|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Release|x86.ActiveCfg = Release|Any CPU
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60}.Release|x86.Build.0 = Release|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Debug|x64.Build.0 = Debug|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Debug|x86.Build.0 = Debug|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Release|x64.ActiveCfg = Release|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Release|x64.Build.0 = Release|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Release|x86.ActiveCfg = Release|Any CPU
+		{6E10EA9D-312D-2D90-CD4E-2081E8A2718A}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7F635602-87A2-40B8-8716-9AA5D21F8E60} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C8103666-7B56-4141-86AB-2F156806757B}
+	EndGlobalSection
+EndGlobal

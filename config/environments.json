@@ -1,76 +1,134 @@
 {
-	"apis": [
-		{
-			"name": "<API NAME>",
-			"configType": "json",
-			"configFile": "<CONFIG_FILE_PATH>",
-			"gitRepo": "<GIT_REPO_PATH>",
-			"desktop": 1,
-			"batchOpen": "<DRIVE_LETTER>:\\DevAutomation\\batches\\open-solution.bat",
-			"clients": [
-				"default",
-				"client1",
-				"client2",
-				"client3"
-			]
-		}
-	],
-	"branches": [
-		"developer",
-		"homolog",
-		"master"
-	],
-	"servers": {
-		"developer": {
-			"host": "<SERVIDOR>",
-			"user": "<USUARIO>",
-			"password": "<SENHA_DO_SERVIDOR>",
-			"apis": [
-				{
-					"name": "<NOME_DO_PROJETO>",
-					"configPath": "<CAMINHO_DO_PROJETO>",
-					"configType": "json"
-				},
-				{
-					"name": "<NOME_DO_PROJETO>",
-					"configPath": "<CAMINHO_DO_PROJETO>",
-					"configType": "json"
-				}
-			]
-		},
-		"homolog": {
-			"host": "<SERVIDOR>",
-			"user": "<USUARIO>",
-			"password": "<SENHA_DO_SERVIDOR>",
-			"apis": [
-				{
-					"name": "<NOME_DO_PROJETO>",
-					"configPath": "<CAMINHO_DO_PROJETO>",
-					"configType": "json"
-				},
-				{
-					"name": "<NOME_DO_PROJETO>",
-					"configPath": "<CAMINHO_DO_PROJETO>",
-					"configType": "json"
-				}
-			]
-		},
-		"master": {
-			"host": "<SERVIDOR>",
-			"user": "<USUARIO>",
-			"password": "<SENHA_DO_SERVIDOR>",
-			"apis": [
-				{
-					"name": "<NOME_DO_PROJETO>",
-					"configPath": "<CAMINHO_DO_PROJETO>",
-					"configType": "json"
-				},
-				{
-					"name": "<NOME_DO_PROJETO>",
-					"configPath": "<CAMINHO_DO_PROJETO>",
-					"configType": "json"
-				}
-			]
-		},
-	}
+  "apis": [
+    {
+      "name": "cmsx",
+      "configType": "json",
+      "configFile": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\cmsx\\CMSUI\\appsettings.json",
+      "gitRepo": "T:\\Developer\\RepositorioTrabalho\\tecbakana",
+      "solutionPath": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\cmsx\\cmsx.sln",
+      "desktop": 1,
+      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
+      "clients": [
+        "cmsx"
+      ]
+    },
+    {
+      "name": "LimpMaxAgent",
+      "configType": "json",
+      "configFile": "T:\\Developer\\AgenteIA\\LimpMaxAgent\\appsettings.json",
+      "gitRepo": "T:\\Developer\\AgenteIA\\LimpMaxAgent",
+      "solutionPath": "T:\\Developer\\AgenteIA\\LimpMaxAgent\\LimpMaxAgent.sln",
+      "desktop": 1,
+      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
+      "clients": [
+        "LimpMaxAgent"
+      ]
+    },
+    {
+      "name": "Salematic",
+      "configType": "json",
+      "configFile": "t:\\Developer\\Salematic\\Salematic.API\\appsettings.json",
+      "gitRepo": "t:\\Developer\\Salematic",
+      "solutionPath": "t:\\Developer\\Salematic\\Salematic.sln",
+      "desktop": 1,
+      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
+      "clients": [
+        "default"
+      ]
+    },
+    {
+      "name": "DevAutomation",
+      "configType": "json",
+      "configFile": "t:\\DevAutomation\\appsettings.json",
+      "gitRepo": "t:\\DevAutomation",
+      "solutionPath": "t:\\DevAutomation\\DevAutomation.Server\\Forge.sln",
+      "desktop": 1,
+      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
+      "clients": [
+        "default"
+      ]
+    },
+    {
+      "name": "SignalR",
+      "configType": "json",
+      "configFile": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\signalRProj\\appsettings.json",
+      "gitRepo": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\signalRProj",
+      "solutionPath": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\signalRProj\\SignalRStudy.sln",
+      "desktop": 1,
+      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
+      "clients": [
+        "default"
+      ]
+    },
+    {
+      "name": "PedidoGateway",
+      "configType": "json",
+      "configFile": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\PedidoGateway\\PedidoGateway\\appsettings.json",
+      "gitRepo": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\PedidoGateway",
+      "solutionPath": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\PedidoGateway\\PedidoGateway.sln",
+      "desktop": 1,
+      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
+      "clients": [
+        "default"
+      ]
+    }
+  ],
+  "branches": [
+    "developer",
+    "homolog",
+    "master"
+  ],
+  "servers": {
+    "developer": {
+      "host": "<SERVIDOR>",
+      "user": "<USUARIO>",
+      "password": "<SENHA_DO_SERVIDOR>",
+      "apis": [
+        {
+          "name": "<NOME_DO_PROJETO>",
+          "configPath": "<CAMINHO_DO_PROJETO>",
+          "configType": "json"
+        },
+        {
+          "name": "<NOME_DO_PROJETO>",
+          "configPath": "<CAMINHO_DO_PROJETO>",
+          "configType": "json"
+        }
+      ]
+    },
+    "homolog": {
+      "host": "<SERVIDOR>",
+      "user": "<USUARIO>",
+      "password": "<SENHA_DO_SERVIDOR>",
+      "apis": [
+        {
+          "name": "<NOME_DO_PROJETO>",
+          "configPath": "<CAMINHO_DO_PROJETO>",
+          "configType": "json"
+        },
+        {
+          "name": "<NOME_DO_PROJETO>",
+          "configPath": "<CAMINHO_DO_PROJETO>",
+          "configType": "json"
+        }
+      ]
+    },
+    "master": {
+      "host": "<SERVIDOR>",
+      "user": "<USUARIO>",
+      "password": "<SENHA_DO_SERVIDOR>",
+      "apis": [
+        {
+          "name": "<NOME_DO_PROJETO>",
+          "configPath": "<CAMINHO_DO_PROJETO>",
+          "configType": "json"
+        },
+        {
+          "name": "<NOME_DO_PROJETO>",
+          "configPath": "<CAMINHO_DO_PROJETO>",
+          "configType": "json"
+        }
+      ]
+    }
+  }
 }

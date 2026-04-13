@@ -1,3 +1,15 @@
+param(
+    [string]$Api = "all"   # "all" ou nomes separados por virgula
+)
+
+$logFile = "T:\DevAutomation\vs-open.log"
+"[$([datetime]::Now)] Open-Solutions.ps1 INICIADO — Api=$Api  PSVersion=$($PSVersionTable.PSVersion)" | Out-File $logFile -Append
+
+# Sanitiza $Api: se for um objeto serializado (@{name=...}), extrai o nome
+if ($Api -match '^\@\{name=([^;}\s]+)') {
+    $Api = $Matches[1]
+    "[$([datetime]::Now)] AVISO: Api recebido como objeto serializado — corrigido para: '$Api'" | Out-File $logFile -Append
+}
 
 # =============================================================================
 # Carrega solutions do environments.json (sem hardcode)
@@ -5,22 +17,44 @@
 $scriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $configPath = Join-Path $scriptDir "..\config\environments.json"
 
+"[$([datetime]::Now)] configPath=$configPath  existe=$(Test-Path $configPath)" | Out-File $logFile -Append
+
 $raw    = Get-Content $configPath -Raw -Encoding UTF8
 $raw    = $raw -replace '(?m)//.*$', ''
 $config = $raw | ConvertFrom-Json
 
+# Filtra APIs conforme parametro -Api
+$apisFiltradas = $config.apis
+"[$([datetime]::Now)] Total APIs no config: $($config.apis.Count) — nomes: $(($config.apis | ForEach-Object { $_.name }) -join ', ')" | Out-File $logFile -Append
+if ($Api -ne "all") {
+    $apisFiltro = $Api -split "," | ForEach-Object { $_.Trim() }
+    "[$([datetime]::Now)] Filtro aplicado: $($apisFiltro -join ', ')" | Out-File $logFile -Append
+    $apisFiltradas = @($config.apis | Where-Object { $apisFiltro -contains $_.name })
+}
+"[$([datetime]::Now)] APIs filtradas: $($apisFiltradas.Count) — $($apisFiltradas | ForEach-Object { $_.name } | Join-String -Separator ', ')" | Out-File $logFile -Append
+
 # Monta lista unica de solutions (APIs que compartilham o mesmo .sln abrem apenas uma vez)
 $seen      = @{}
 $solutions = @()
-foreach ($api in $config.apis) {
-    if (-not $api.solutionPath) { continue }
-    $slnKey = $api.solutionPath.ToLower()
-    if ($seen.ContainsKey($slnKey)) { continue }
+foreach ($entry in $apisFiltradas) {
+    "[$([datetime]::Now)] Verificando $($entry.name) — solutionPath='$($entry.solutionPath)'" | Out-File $logFile -Append
+    if (-not $entry.solutionPath) {
+        "[$([datetime]::Now)] SKIP $($entry.name): solutionPath vazio" | Out-File $logFile -Append
+        continue
+    }
+    $slnKey = $entry.solutionPath.ToLower()
+    if ($seen.ContainsKey($slnKey)) {
+        "[$([datetime]::Now)] SKIP $($entry.name): sln duplicado" | Out-File $logFile -Append
+        continue
+    }
     $seen[$slnKey] = $true
-    $solutions += @{ Name = $api.name; Sln = $api.solutionPath; Desktop = $api.desktop }
+    $solutions += @{ Name = $entry.name; Sln = $entry.solutionPath; Desktop = $entry.desktop }
 }
 
+"[$([datetime]::Now)] Solutions encontradas: $($solutions.Count) — $($solutions | ForEach-Object { $_.Name } | Join-String -Separator ', ')" | Out-File $logFile -Append
+
 $vdExe  = Join-Path $scriptDir "..\tools\VirtualDesktop11.exe"
+"[$([datetime]::Now)] vdExe=$vdExe  existe=$(Test-Path $vdExe)" | Out-File $logFile -Append
 
 $devenv = $null
 $candidatos = @(
@@ -31,7 +65,9 @@ $candidatos = @(
 foreach ($c in $candidatos) {
     if (Test-Path $c) { $devenv = $c; break }
 }
+"[$([datetime]::Now)] devenv=$devenv" | Out-File $logFile -Append
 if (-not $devenv) {
+    "[$([datetime]::Now)] ERRO: devenv.exe nao encontrado" | Out-File $logFile -Append
     Write-Error "devenv.exe nao encontrado. Verifique a instalacao do Visual Studio 2022."
     exit 1
 }
@@ -84,22 +120,29 @@ foreach ($sol in $solutions) {
 
     Write-Host ""
     Write-Host "→ $($sol.Name)" -ForegroundColor Yellow
+    "[$([datetime]::Now)] Processando: $($sol.Name) — sln=$($sol.Sln)" | Out-File $logFile -Append
 
     if (-not (Test-Path $sol.Sln)) {
         Write-Warning "  .sln nao encontrado: $($sol.Sln)"
+        "[$([datetime]::Now)] SKIP: .sln nao encontrado: $($sol.Sln)" | Out-File $logFile -Append
         continue
     }
-	
-	if(-not (Test-SolutionAberta($sol.sln)))
-	{
-		Switch-ToDesktop -DesktopIndex $sol.Desktop
-		Start-Sleep -Seconds 2
-		Start-Process -FilePath $devenv -ArgumentList "`"$($sol.Sln)`""
-		Start-Sleep -Seconds 2
-		Write-Host "  [OK] Aberto" -ForegroundColor Green
-	}
 
-    #Start-Sleep -Seconds 3
+    $jaAberta = Test-SolutionAberta -SlnPath $sol.Sln
+    "[$([datetime]::Now)] Test-SolutionAberta=$jaAberta" | Out-File $logFile -Append
+
+    if (-not $jaAberta) {
+        "[$([datetime]::Now)] Chamando Switch-ToDesktop desktop=$($sol.Desktop)" | Out-File $logFile -Append
+        Switch-ToDesktop -DesktopIndex $sol.Desktop
+        Start-Sleep -Seconds 2
+        "[$([datetime]::Now)] Chamando Start-Process devenv com '$($sol.Sln)'" | Out-File $logFile -Append
+        Start-Process -FilePath $devenv -ArgumentList "`"$($sol.Sln)`""
+        Start-Sleep -Seconds 2
+        "[$([datetime]::Now)] Start-Process devenv disparado para $($sol.Name)" | Out-File $logFile -Append
+        Write-Host "  [OK] Aberto" -ForegroundColor Green
+    } else {
+        "[$([datetime]::Now)] SKIP: $($sol.Name) ja esta aberta" | Out-File $logFile -Append
+    }
 }
 
 Write-Host ""

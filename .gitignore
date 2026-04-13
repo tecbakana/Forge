@@ -22,5 +22,15 @@ templates/
 # Visual Studio
 .vs/
 
+# Ferramentas de IA
+.claude/
+
+# Logs
+*.log
+
 # Binários de terceiros
 tools/VirtualDesktop11.exe
+
+# Artefatos .NET
+bin/
+obj/

@@ -31,7 +31,8 @@ function Get-GitStatus {
         $files += @{ path = $path; type = $type; diff = $diff }
     }
 
-    $branch = (git rev-parse --abbrev-ref HEAD 2>&1).Trim()
+    $rawB = git rev-parse --abbrev-ref HEAD 2>&1
+    $branch = if ($rawB -and $rawB -isnot [System.Management.Automation.ErrorRecord]) { "$rawB".Trim() } else { "?" }
     Pop-Location
     return @{ branch = $branch; files = $files; count = $files.Count }
 }
@@ -41,7 +42,8 @@ function Get-GitAheadBehind {
     if (-not (Test-Path $RepoPath)) { return @{ error = "Caminho nao encontrado: $RepoPath" } }
     Push-Location $RepoPath
 
-    $branch = (git rev-parse --abbrev-ref HEAD 2>&1).Trim()
+    $rawB = git rev-parse --abbrev-ref HEAD 2>&1
+    $branch = if ($rawB -and $rawB -isnot [System.Management.Automation.ErrorRecord]) { "$rawB".Trim() } else { "?" }
     git fetch origin 2>&1 | Out-Null
 
     $ab     = git rev-list --left-right --count "origin/$branch...HEAD" 2>&1

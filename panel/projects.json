@@ -1,0 +1,237 @@
+{
+  "projects": [
+    {
+      "id": "multiplai",
+      "name": "Multiplai",
+      "internalName": "cmsx",
+      "description": "CMS multi-tenant com Page Builder IA. Reposit\u00F3rio interno usa o nome \u0027cmsx\u0027.",
+      "status": "active",
+      "stack": [
+        "ASP.NET Core 8",
+        "Angular 15",
+        "EF Core 8",
+        "SQL Server",
+        "PostgreSQL"
+      ],
+      "ai": [
+        "Gemini 2.5-Flash",
+        "Claude Haiku 4.5"
+      ],
+      "repo": "github.com/tecbakana/cmsx",
+      "branch": "developer",
+      "devUrl": "https://localhost:44455",
+      "integrations": [
+        "Azure Service Bus",
+        "Azure Blob Storage",
+        "Salematic API"
+      ],
+      "notes": [
+        "Connection string do Service Bus est\u00E1 hardcoded no appsettings.json \u2014 mover para secrets",
+        "Produto p\u00FAblico: Multiplai \u2014 c\u00F3digo interno ainda usa \u0027cmsx\u0027"
+      ],
+      "roadmap": [
+        {
+          "id": "page-builder-ia",
+          "titulo": "Page Builder IA",
+          "descricao": "Gera\u00E7\u00E3o autom\u00E1tica de p\u00E1ginas e se\u00E7\u00F5es de conte\u00FAdo via LLM, permitindo ao usu\u00E1rio descrever o layout e receber uma p\u00E1gina pronta.",
+          "status": "cancelado",
+          "impacto": "alto"
+        },
+        {
+          "id": "pedidos-salematic",
+          "titulo": "Tela de pedidos Salematic",
+          "descricao": "Interface no CMSX que consome a API do Salematic para exibir e gerenciar pedidos dos clientes.",
+          "status": "cancelado",
+          "impacto": "alto"
+        },
+        {
+          "id": "servicebus-config",
+          "titulo": "Externalizar connection string do Service Bus",
+          "descricao": "Mover a connection string do Azure Service Bus para dotnet user-secrets ou vari\u00E1vel de ambiente, eliminando o risco de exposi\u00E7\u00E3o no reposit\u00F3rio.",
+          "status": "pausado",
+          "impacto": "medio"
+        },
+        {
+          "id": "multi-ia-fallback",
+          "titulo": "Altern\u00E2ncia autom\u00E1tica Gemini \u2192 Claude",
+          "descricao": "Implementar fallback autom\u00E1tico entre Gemini 2.5-Flash e Claude Haiku 4.5 em caso de falha ou timeout.",
+          "status": "planejado",
+          "impacto": "medio"
+        },
+        {
+          "id": "multi-tenant-onboarding",
+          "titulo": "Onboarding multi-tenant via painel",
+          "descricao": "Fluxo de cadastro e configura\u00E7\u00E3o de novos tenants diretamente pelo painel administrativo do Multiplai.",
+          "status": "planejado",
+          "impacto": "alto"
+        }
+      ]
+    },
+    {
+      "id": "salematic",
+      "name": "Salematic",
+      "internalName": "Salematic",
+      "description": "Agente de vendas com IA conversacional. Rebranding e refatora\u00E7\u00E3o do LimpMaxAgent, com arquitetura mais simples e moderna.",
+      "status": "active",
+      "stack": [
+        ".NET 8.0",
+        "React 18",
+        "TypeScript",
+        "SQL Server",
+        "Dapper"
+      ],
+      "ai": [
+        "Gemini 2.5-Flash",
+        "Claude Sonnet 4.6"
+      ],
+      "repo": "local",
+      "branch": "main",
+      "integrations": [
+        "Multiplai/CMSX"
+      ],
+      "notes": [
+        "API keys configuradas via dotnet user-secrets \u2014 appsettings.json n\u00E3o cont\u00E9m chaves sens\u00EDveis"
+      ],
+      "ferramentasAgente": [
+        "consultar_estoque",
+        "registrar_pedido",
+        "consultar_pedidos",
+        "cancelar_pedido"
+      ],
+      "roadmap": [
+        {
+          "id": "integracao-cmsx",
+          "titulo": "Integra\u00E7\u00E3o CMSX \u2194 Salematic",
+          "descricao": "Tela de pedidos no Multiplai consumindo a API do Salematic via Azure Service Bus. Integra\u00E7\u00E3o bidirecional em andamento.",
+          "status": "cancelado",
+          "impacto": "alto"
+        },
+        {
+          "id": "agente-incremental",
+          "titulo": "Agente Incremental Auto-Evolutivo",
+          "descricao": "Quando o chat detecta uma limita\u00E7\u00E3o em runtime (ex: cliente n\u00E3o cadastrado), a LLM aciona automaticamente uma pipeline para implementar a feature. Requer supervis\u00E3o humana antes do commit. Roda apenas em ambiente developer.",
+          "status": "cancelado",
+          "impacto": "alto",
+          "discussao": "2026-04-02"
+        },
+        {
+          "id": "cadastro-automatico-cliente",
+          "titulo": "Cadastro autom\u00E1tico de cliente via LLM",
+          "descricao": "LLM detecta que cliente n\u00E3o possui cadastro durante conversa e aciona o agente incremental para implementar o fluxo de cadastro automaticamente.",
+          "status": "pausado",
+          "impacto": "medio",
+          "discussao": "2026-04-02"
+        },
+        {
+          "id": "historico-conversas",
+          "titulo": "Hist\u00F3rico de conversas persistido",
+          "descricao": "Armazenar o hist\u00F3rico de conversas do agente no banco de dados para retomada de contexto entre sess\u00F5es.",
+          "status": "planejado",
+          "impacto": "medio"
+        },
+        {
+          "id": "multi-canal",
+          "titulo": "Suporte multi-canal",
+          "descricao": "Expor o agente de vendas em canais adicionais (WhatsApp, Telegram) al\u00E9m da interface web.",
+          "status": "planejado",
+          "impacto": "alto"
+        }
+      ]
+    },
+    {
+      "id": "forge",
+      "name": "Forge",
+      "internalName": "devautomation",
+      "description": "Orquestrador de ambientes de desenvolvimento. Gerencia cmsx, Salematic, LimpMaxAgent, TaaS, TaxEngineReforma e TaxEngineRest.",
+      "status": "active",
+      "stack": [
+        "ASP.NET Core 9",
+        "PowerShell 5.1\u002B",
+        "HTML/JS",
+        "SignalR"
+      ],
+      "ai": [
+        "Gemini 2.0 Flash"
+      ],
+      "repo": "local",
+      "branch": "main",
+      "devUrl": "http://localhost:8080",
+      "integrations": [],
+      "notes": [
+        "Config central em T:\\devautomation\\config\\environments.json",
+        "Dev-requests em T:\\devautomation\\dev-requests\\ (statuses: pendente, aguardando_aprovacao, in_progress, done, error)"
+      ],
+      "roadmap": [
+        {
+          "id": "roadmap-view",
+          "titulo": "P\u00E1gina de roadmap por projeto",
+          "descricao": "View dedicada no painel para exibir informa\u00E7\u00F5es detalhadas e roadmap de cada projeto, consumindo projects.json.",
+          "status": "in_progress",
+          "impacto": "baixo"
+        },
+        {
+          "id": "devrequest-manual",
+          "titulo": "Cria\u00E7\u00E3o manual de Dev Requests via painel",
+          "descricao": "Formul\u00E1rio no painel para criar dev requests manualmente, sem depender do DevAgent.",
+          "status": "planejado",
+          "impacto": "baixo"
+        },
+        {
+          "id": "push-git",
+          "titulo": "Git Push via painel",
+          "descricao": "Adicionar suporte a push na view Git, al\u00E9m do commit j\u00E1 existente.",
+          "status": "planejado",
+          "impacto": "baixo"
+        },
+        {
+          "id": "filtro-devrequest",
+          "titulo": "Filtro por projeto no Kanban",
+          "descricao": "Filtrar os cards do Kanban de Dev Requests por projeto/API.",
+          "status": "planejado",
+          "impacto": "baixo"
+        },
+        {
+          "id": "multi-desktop",
+          "titulo": "Abertura em virtual desktops",
+          "descricao": "Abertura de solu\u00E7\u00F5es em desktops virtuais configur\u00E1veis do Windows.",
+          "status": "done",
+          "impacto": "medio"
+        },
+        {
+          "id": "devagent-imagem",
+          "titulo": "Suporte a imagem no DevAgent",
+          "descricao": "Envio de screenshots e imagens para o DevAgent via upload ou Ctrl\u002BV.",
+          "status": "done",
+          "impacto": "medio"
+        }
+      ]
+    },
+    {
+      "id": "limpmax",
+      "name": "LimpMaxAgent",
+      "internalName": "LimpMaxAgent",
+      "description": "Agente IA legado para o setor de limpeza. Base original para o Salematic, atualmente em processo de migra\u00E7\u00E3o e substitui\u00E7\u00E3o.",
+      "status": "legacy",
+      "stack": [
+        ".NET",
+        "SQL Server"
+      ],
+      "ai": [],
+      "repo": "local",
+      "branch": "main",
+      "notes": [
+        "Sendo substitu\u00EDdo pelo Salematic \u2014 manter funcional at\u00E9 migra\u00E7\u00E3o completa",
+        "N\u00E3o iniciar novas features neste projeto"
+      ],
+      "roadmap": [
+        {
+          "id": "migracao-salematic",
+          "titulo": "Migra\u00E7\u00E3o completa para Salematic",
+          "descricao": "Transferir todas as funcionalidades, integra\u00E7\u00F5es e dados do LimpMaxAgent para o Salematic. Ap\u00F3s conclus\u00E3o, o LimpMaxAgent ser\u00E1 descontinuado.",
+          "status": "in_progress",
+          "impacto": "alto"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+AzureDB passo a passo Claro! Passo a passo:
+
+    ---
+    1. Criar o Azure SQL Server + Database
+    - Portal Azure → Create a resource → SQL Database
+    - Database name: LimpMaxDB
+    - Server: Create new
+      - Server name: ex sql-limpmax-dev
+      - Authentication: SQL authentication
+      - Login + senha: anota bem, vai precisar
+    - Compute + storage: Basic ou Serverless (mais barato)
+    - Cria
+
+    ---
+    2. Liberar firewall
+    - No recurso criado → Set server firewall
+    - Add your client IP → Save
+
+    ---
+    3. Rodar o script
+    - No banco → Query editor (no próprio portal)
+    - Faz login com o usuário criado
+    - Cola o script CreateDatabase.sql sem as duas primeiras linhas:
+    -- CREATE DATABASE LimpMaxDB;
+    -- GO
+    -- USE LimpMaxDB;
+    -- GO
+    - Roda tudo o resto
+
+    ---
+    4. Pegar a connection string
+    - No banco → Connection strings → copia a de ADO.NET
+    - Troca {your_password} pela senha real
+    - Guarda — vai usar no App Service depois
+
+    ---
+    Me fala quando o banco estiver criado e rodando que a gente segue pro App Service!
