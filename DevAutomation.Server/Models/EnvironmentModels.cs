@@ -42,6 +42,24 @@ public class ApiConfig
 
     [JsonPropertyName("clients")]
     public List<string> Clients { get; set; } = ["default"];
+
+    [JsonPropertyName("runTargets")]
+    public List<RunTarget>? RunTargets { get; set; }
+
+    [JsonPropertyName("browserUrl")]
+    public string? BrowserUrl { get; set; }
+}
+
+public class RunTarget
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = "";
+
+    [JsonPropertyName("dir")]
+    public string Dir { get; set; } = "";
+
+    [JsonPropertyName("command")]
+    public string Command { get; set; } = "";
 }
 
 public class ServerConfig

@@ -10,19 +10,20 @@
       "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
       "clients": [
         "cmsx"
-      ]
-    },
-    {
-      "name": "LimpMaxAgent",
-      "configType": "json",
-      "configFile": "T:\\Developer\\AgenteIA\\LimpMaxAgent\\appsettings.json",
-      "gitRepo": "T:\\Developer\\AgenteIA\\LimpMaxAgent",
-      "solutionPath": "T:\\Developer\\AgenteIA\\LimpMaxAgent\\LimpMaxAgent.sln",
-      "desktop": 1,
-      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
-      "clients": [
-        "LimpMaxAgent"
-      ]
+      ],
+      "runTargets": [
+        {
+          "name": "CMSAPI",
+          "dir": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\cmsx\\CMSAPI",
+          "command": "dotnet run"
+        },
+        {
+          "name": "CMSUI",
+          "dir": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\cmsx\\CMSUI",
+          "command": "dotnet run"
+        }
+      ],
+      "browserUrl": "http://localhost:44455/login"
     },
     {
       "name": "Salematic",
@@ -34,19 +35,29 @@
       "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
       "clients": [
         "default"
-      ]
+      ],
+      "runTargets": [
+        {
+          "name": "Salematic API",
+          "dir": "T:\\Developer\\Salematic\\Salematic.API",
+          "command": "dotnet run"
+        }
+      ],
+      "browserUrl": null
     },
     {
-      "name": "DevAutomation",
+      "name": "Forge V2",
       "configType": "json",
-      "configFile": "t:\\DevAutomation\\appsettings.json",
-      "gitRepo": "t:\\DevAutomation",
-      "solutionPath": "t:\\DevAutomation\\DevAutomation.Server\\Forge.sln",
+      "configFile": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\ForgeV2\\appsettings.json",
+      "gitRepo": "tT:\\Developer\\RepositorioTrabalho\\tecbakana\\ForgeV2\\",
+      "solutionPath": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\ForgeV2\\Forge.sln",
       "desktop": 1,
-      "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
+      "batchOpen": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\ForgeV2\\open-solution.bat",
       "clients": [
         "default"
-      ]
+      ],
+      "runTargets": null,
+      "browserUrl": null
     },
     {
       "name": "SignalR",
@@ -58,7 +69,9 @@
       "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
       "clients": [
         "default"
-      ]
+      ],
+      "runTargets": null,
+      "browserUrl": null
     },
     {
       "name": "PedidoGateway",
@@ -70,7 +83,23 @@
       "batchOpen": "T:\\DevAutomation\\batches\\open-solution.bat",
       "clients": [
         "default"
-      ]
+      ],
+      "runTargets": null,
+      "browserUrl": null
+    },
+    {
+      "name": "ClientApp (Loja publica)",
+      "configType": "json",
+      "configFile": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\cmsx\\cmsui\\ClientApp",
+      "gitRepo": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\cmsx\\cmsui\\ClientApp",
+      "solutionPath": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\cmsx\\cmsui\\ClientApp",
+      "desktop": 1,
+      "batchOpen": null,
+      "clients": [
+        "default"
+      ],
+      "runTargets": null,
+      "browserUrl": null
     }
   ],
   "branches": [
@@ -80,55 +109,56 @@
   ],
   "servers": {
     "developer": {
-      "host": "<SERVIDOR>",
-      "user": "<USUARIO>",
-      "password": "<SENHA_DO_SERVIDOR>",
+      "host": "\u003CSERVIDOR\u003E",
+      "user": "\u003CUSUARIO\u003E",
+      "password": "\u003CSENHA_DO_SERVIDOR\u003E",
       "apis": [
         {
-          "name": "<NOME_DO_PROJETO>",
-          "configPath": "<CAMINHO_DO_PROJETO>",
+          "name": "\u003CNOME_DO_PROJETO\u003E",
+          "configPath": "\u003CCAMINHO_DO_PROJETO\u003E",
           "configType": "json"
         },
         {
-          "name": "<NOME_DO_PROJETO>",
-          "configPath": "<CAMINHO_DO_PROJETO>",
+          "name": "\u003CNOME_DO_PROJETO\u003E",
+          "configPath": "\u003CCAMINHO_DO_PROJETO\u003E",
           "configType": "json"
         }
       ]
     },
     "homolog": {
-      "host": "<SERVIDOR>",
-      "user": "<USUARIO>",
-      "password": "<SENHA_DO_SERVIDOR>",
+      "host": "\u003CSERVIDOR\u003E",
+      "user": "\u003CUSUARIO\u003E",
+      "password": "\u003CSENHA_DO_SERVIDOR\u003E",
       "apis": [
         {
-          "name": "<NOME_DO_PROJETO>",
-          "configPath": "<CAMINHO_DO_PROJETO>",
+          "name": "\u003CNOME_DO_PROJETO\u003E",
+          "configPath": "\u003CCAMINHO_DO_PROJETO\u003E",
           "configType": "json"
         },
         {
-          "name": "<NOME_DO_PROJETO>",
-          "configPath": "<CAMINHO_DO_PROJETO>",
+          "name": "\u003CNOME_DO_PROJETO\u003E",
+          "configPath": "\u003CCAMINHO_DO_PROJETO\u003E",
           "configType": "json"
         }
       ]
     },
     "master": {
-      "host": "<SERVIDOR>",
-      "user": "<USUARIO>",
-      "password": "<SENHA_DO_SERVIDOR>",
+      "host": "\u003CSERVIDOR\u003E",
+      "user": "\u003CUSUARIO\u003E",
+      "password": "\u003CSENHA_DO_SERVIDOR\u003E",
       "apis": [
         {
-          "name": "<NOME_DO_PROJETO>",
-          "configPath": "<CAMINHO_DO_PROJETO>",
+          "name": "\u003CNOME_DO_PROJETO\u003E",
+          "configPath": "\u003CCAMINHO_DO_PROJETO\u003E",
           "configType": "json"
         },
         {
-          "name": "<NOME_DO_PROJETO>",
-          "configPath": "<CAMINHO_DO_PROJETO>",
+          "name": "\u003CNOME_DO_PROJETO\u003E",
+          "configPath": "\u003CCAMINHO_DO_PROJETO\u003E",
           "configType": "json"
         }
       ]
     }
-  }
+  },
+  "agent": null
 }

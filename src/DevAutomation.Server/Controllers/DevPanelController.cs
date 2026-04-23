@@ -512,11 +512,61 @@ public class DevPanelController : ControllerBase
         return Ok(new { success = true, id = request.Id });
     }
 
+    [HttpPut("devrequests/{id}")]
+    public IActionResult EditDevRequest(string id, [FromBody] DevRequestEditBody body)
+    {
+        var dir  = _orchestrator.DevRequestsDir;
+        var path = Path.Combine(dir, $"{id}.json");
+
+        if (!System.IO.File.Exists(path))
+            return NotFound(new { success = false, error = "Dev request não encontrada." });
+
+        var json = System.IO.File.ReadAllText(path);
+        var req  = JsonSerializer.Deserialize<DevRequest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (req is null)
+            return BadRequest(new { success = false, error = "JSON inválido." });
+
+        req.Api                  = body.Api ?? req.Api;
+        req.Tipo                 = body.Tipo ?? req.Tipo;
+        req.Impacto              = body.Impacto ?? req.Impacto;
+        req.Descricao            = body.Descricao ?? req.Descricao;
+        req.Detalhes             = body.Detalhes;
+        req.DiretorioAlvo        = body.DiretorioAlvo;
+        req.TimestampAtualizacao = DateTime.UtcNow;
+
+        System.IO.File.WriteAllText(path, JsonSerializer.Serialize(req, new JsonSerializerOptions { WriteIndented = true }));
+
+        return Ok(new { success = true });
+    }
+
     [HttpPost("devrequests/action")]
     public async Task<IActionResult> DevRequestAction([FromBody] DevRequestActionBody body)
     {
         var result = await _orchestrator.ProcessActionAsync(body.Id!, body.Action!);
         return Ok(new { success = result });
+    }
+
+    [HttpPost("devrequests/responder")]
+    public IActionResult DevRequestResponder([FromBody] DevRequestResponderBody body)
+    {
+        var dir  = _orchestrator.DevRequestsDir;
+        var path = Path.Combine(dir, $"{body.Id}.json");
+
+        if (!System.IO.File.Exists(path))
+            return NotFound(new { success = false, error = "Dev request não encontrada." });
+
+        var json = System.IO.File.ReadAllText(path);
+        var req  = JsonSerializer.Deserialize<DevRequest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (req is null)
+            return BadRequest(new { success = false, error = "JSON inválido." });
+
+        req.RespostaUsuario      = body.Resposta;
+        req.Status               = "pendente";
+        req.TimestampAtualizacao = DateTime.UtcNow;
+
+        System.IO.File.WriteAllText(path, JsonSerializer.Serialize(req, new JsonSerializerOptions { WriteIndented = true }));
+
+        return Ok(new { success = true });
     }
 
     // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -578,11 +628,102 @@ public class DevPanelController : ControllerBase
     }
 
     private static string EscapeArg(string s) => s.Replace("\"", "\\\"");
+
+    [HttpPost("start-apps")]
+    public IActionResult StartApps([FromBody] StartAppsRequest body)
+    {
+        var cfg = _config.LoadConfig();
+        var api = cfg.Apis.FirstOrDefault(a => string.Equals(a.Name, body.Api, StringComparison.OrdinalIgnoreCase));
+        if (api is null) return NotFound(new { message = $"API '{body.Api}' não encontrada." });
+        if (api.RunTargets is null || api.RunTargets.Count == 0)
+            return BadRequest(new { message = "Nenhum runTarget configurado para esta API." });
+
+        foreach (var target in api.RunTargets)
+        {
+            var args = $"new-tab --title \"{target.Name}\" --startingDirectory \"{target.Dir}\" pwsh -NoExit -Command \"{target.Command}\"";
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "wt",
+                Arguments = args,
+                UseShellExecute = true
+            });
+        }
+
+        if (!string.IsNullOrEmpty(api.BrowserUrl))
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = api.BrowserUrl,
+                UseShellExecute = true
+            });
+
+        return Ok(new { message = $"{api.RunTargets.Count} terminal(is) aberto(s).", targets = api.RunTargets.Select(t => t.Name) });
+    }
+
+    [HttpPost("apps/register")]
+    public IActionResult RegisterApp([FromBody] RegisterAppRequest body)
+    {
+        if (string.IsNullOrWhiteSpace(body.Name)) return BadRequest(new { error = "Nome obrigatório." });
+
+        var cfg = _config.LoadConfig();
+        if (cfg.Apis.Any(a => string.Equals(a.Name, body.Name, StringComparison.OrdinalIgnoreCase)))
+            return BadRequest(new { error = $"API '{body.Name}' já cadastrada." });
+
+        cfg.Apis.Add(new ApiConfig
+        {
+            Name         = body.Name,
+            ConfigType   = body.ConfigType ?? "json",
+            ConfigFile   = body.ConfigFile ?? "",
+            GitRepo      = body.GitRepo ?? "",
+            SolutionPath = body.SolutionPath,
+            Desktop      = body.Desktop > 0 ? body.Desktop : 1,
+            RunTargets   = body.RunTargets?.Select(r => new RunTarget { Name = r.Name, Dir = r.Dir, Command = r.Command }).ToList()
+        });
+
+        _config.SaveConfig(cfg);
+        return Ok(new { success = true });
+    }
+
+    [HttpPost("apps/unregister")]
+    public IActionResult UnregisterApp([FromBody] UnregisterAppRequest body)
+    {
+        if (string.IsNullOrWhiteSpace(body.Name)) return BadRequest(new { error = "Nome obrigatório." });
+
+        var cfg = _config.LoadConfig();
+        var api = cfg.Apis.FirstOrDefault(a => string.Equals(a.Name, body.Name, StringComparison.OrdinalIgnoreCase));
+        if (api is null) return NotFound(new { error = $"API '{body.Name}' não encontrada." });
+
+        cfg.Apis.Remove(api);
+        _config.SaveConfig(cfg);
+        return Ok(new { success = true });
+    }
+
+    [HttpPost("apps/update")]
+    public IActionResult UpdateApp([FromBody] UpdateAppRequest body)
+    {
+        if (string.IsNullOrWhiteSpace(body.Name)) return BadRequest(new { error = "Nome obrigatório." });
+
+        var cfg = _config.LoadConfig();
+        var api = cfg.Apis.FirstOrDefault(a => string.Equals(a.Name, body.Name, StringComparison.OrdinalIgnoreCase));
+        if (api is null) return NotFound(new { error = $"API '{body.Name}' não encontrada." });
+
+        if (body.ConfigType   != null) api.ConfigType   = body.ConfigType;
+        if (body.ConfigFile   != null) api.ConfigFile   = body.ConfigFile;
+        if (body.GitRepo      != null) api.GitRepo      = body.GitRepo;
+        if (body.SolutionPath != null) api.SolutionPath = body.SolutionPath;
+        if (body.Desktop      > 0)     api.Desktop      = body.Desktop;
+        if (body.RunTargets   != null) api.RunTargets   = body.RunTargets.Select(r => new RunTarget { Name = r.Name, Dir = r.Dir, Command = r.Command }).ToList();
+
+        _config.SaveConfig(cfg);
+        return Ok(new { success = true });
+    }
 }
 
 // ── REQUEST MODELS ────────────────────────────────────────────────────────────
 
 public record DevRequestActionBody(string? Id, string? Api, string? Action);
+public record DevRequestResponderBody(string? Id, string? Resposta);
+public record DevRequestEditBody(string? Api, string? Tipo, string? Impacto, string? Descricao, string? Detalhes, string? DiretorioAlvo);
+public record StartAppsRequest(string Api);
 
 public record SwitchRequest
 {
@@ -596,6 +737,10 @@ public record SwitchRequest
 
 public record SaveTemplateRequest(string Api, string Env, string? Client, string? Content);
 public record GitCommitRequest(string Api, string? Message);
+public record RunTargetDto(string Name, string Dir, string Command);
+public record RegisterAppRequest(string Name, string? ConfigType, string? ConfigFile, string? GitRepo, string? SolutionPath, int Desktop, List<RunTargetDto>? RunTargets);
+public record UnregisterAppRequest(string Name);
+public record UpdateAppRequest(string Name, string? ConfigType, string? ConfigFile, string? GitRepo, string? SolutionPath, int Desktop, List<RunTargetDto>? RunTargets);
 public record GitApiRequest(string Api);
 public record ServerPullRequest(string Environment, string? Client, string? Api);
 

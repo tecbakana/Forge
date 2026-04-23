@@ -1,0 +1,18 @@
+{
+  "id": "forge-rag-fase4-gestao",
+  "api": "forge",
+  "tipo": "feature",
+  "impacto": "baixo",
+  "descricao": "Forge RAG — Fase 4: Endpoint de gestão e botão no painel",
+  "detalhes": "Adicionar endpoint REST e UI para gerenciar a base RAG do Forge.\n\n**Depende das Fases 1, 2 e 3 implementadas.**\n\n**Backend — novo arquivo src/routes/rag.ts:**\n\n```typescript\nPOST /rag/reindex\n  Resposta: { ok: true, chunks: number, duracaoMs: number }\n  Ação: chama ragIndexer.indexAll() e retorna resultado\n  Emite evento Socket.IO 'ragReindexDone' com os mesmos dados\n\nGET /rag/stats\n  Resposta: { ready: boolean, totalChunks: number, porTipo: Record<string, number> }\n  Ação: chama ragService.getStats()\n```\n\nRegistrar as rotas em src/index.ts:\n```typescript\napp.use('/rag', ragRouter);\n```\n\n**Frontend — painel T:\\Developer\\RepositorioTrabalho\\tecbakana\\Forge\\panel\\index.html:**\n\nAdicionar na seção de configurações/ferramentas do painel (onde fizer sentido visualmente, próximo a outros botões de ação do sistema):\n\n```html\n<div id=\"rag-section\">\n  <span id=\"rag-stats\">Base RAG: carregando...</span>\n  <button id=\"btn-reindex\">Reindexar base</button>\n</div>\n```\n\nComportamento JS:\n1. Ao carregar painel: GET /rag/stats → exibir total de chunks e status (pronto/não indexado)\n2. Ao clicar 'Reindexar base': POST /rag/reindex → mostrar spinner, aguardar resposta, exibir resultado (X chunks indexados em Yms)\n3. Escutar evento Socket.IO 'ragReindexDone' para atualizar stats em tempo real se reindexação for disparada externamente (pelo watcher)\n\n**Observações:**\n- Sem autenticação adicional (painel já é local)\n- Texto do botão durante operação: 'Reindexando...'\n- Exibir erro simples em caso de falha no endpoint",
+  "url_externa": null,
+  "status": "pendente",
+  "impeditivo": false,
+  "resultado": null,
+  "prompt_agente": null,
+  "diretorio_alvo": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\Forge",
+  "timestamp": "2026-04-22T00:00:00Z",
+  "pendencias": null,
+  "resposta_usuario": null,
+  "timestamp_atualizacao": "2026-04-22T00:00:00Z"
+}

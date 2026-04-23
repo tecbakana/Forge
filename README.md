@@ -168,6 +168,8 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### 3. Editar `config\environments.json`
 
+> **AVISO DE SEGURANÇA:** O `environments.json` contém API keys (Gemini) e senhas de servidores. **Nunca commitar este arquivo com dados reais.** Mantenha-o no `.gitignore` ou use um arquivo de exemplo sem credenciais (`environments.example.json`). Incidente registrado: API key do Gemini foi exposta em commit (2026-04-13).
+
 O arquivo central de configuração define todas as APIs gerenciadas, branches, servidores remotos e a chave da IA.
 
 #### Estrutura de uma entrada de API:

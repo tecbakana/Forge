@@ -1,0 +1,18 @@
+{
+  "id": "forge-rag-fase2-retrieval",
+  "api": "forge",
+  "tipo": "feature",
+  "impacto": "medio",
+  "descricao": "Forge RAG — Fase 2: Serviço de recuperação (ragService.ts)",
+  "detalhes": "Implementar o serviço de busca semântica do Forge em T:\\Developer\\RepositorioTrabalho\\tecbakana\\Forge\\src\\services\\ragService.ts.\n\n**Depende da Fase 1 (forge-rag-fase1-indexer) estar implementada.**\n\n**Interface principal:**\n```typescript\nexport interface RagChunk {\n  id: string;\n  conteudo: string;\n  fonte: string;\n  tipo: string;         // arch | howto | pattern | ref | dev-request\n  projeto: string;      // cmsx | salematic | shared | forge\n  score: number;        // similaridade coseno 0-1\n}\n\nexport async function query(\n  texto: string,\n  topK = 5,\n  filtrosProjeto?: string[]   // opcional: filtrar por projeto\n): Promise<RagChunk[]>\n```\n\n**Implementação:**\n1. Gerar embedding do texto de entrada via text-embedding-004 (mesmo modelo do indexador)\n2. Buscar no LanceDB (data/rag.lance) os topK chunks mais próximos por similaridade coseno\n3. Se filtrosProjeto fornecido, aplicar pré-filtro por campo projeto antes do knn\n4. Retornar chunks ordenados por score descendente\n5. Descartar chunks com score < 0.5 (evitar ruído)\n\n**Tratamento de fallback:**\n- Se banco não existir (indexação ainda não rodou), logar aviso e retornar []\n- Nunca lançar exceção para o chamador — RAG é best-effort, não deve quebrar o fluxo principal\n\n**Exportar também:**\n- isReady(): boolean — retorna true se data/rag.lance existir e tiver chunks\n- getStats(): Promise<{ totalChunks: number, porTipo: Record<string, number> }>\n\n**Observações:**\n- Reutilizar conexão LanceDB (singleton) para evitar overhead de reconexão a cada query\n- Logar (pino) tempo de cada query e chunks retornados em nível debug",
+  "url_externa": null,
+  "status": "pendente",
+  "impeditivo": false,
+  "resultado": null,
+  "prompt_agente": null,
+  "diretorio_alvo": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\Forge",
+  "timestamp": "2026-04-22T00:00:00Z",
+  "pendencias": null,
+  "resposta_usuario": null,
+  "timestamp_atualizacao": "2026-04-22T00:00:00Z"
+}

@@ -41,4 +41,9 @@ public class ConfigService
         state[key] = value;
         SaveState(state);
     }
+
+    public void SaveConfig(EnvironmentConfig cfg)
+    {
+        File.WriteAllText(_configFile, JsonSerializer.Serialize(cfg, _jsonOpts));
+    }
 }

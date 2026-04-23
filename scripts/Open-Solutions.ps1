@@ -2,7 +2,8 @@ param(
     [string]$Api = "all"   # "all" ou nomes separados por virgula
 )
 
-$logFile = "T:\DevAutomation\vs-open.log"
+$rootDir = Split-Path (Split-Path $MyInvocation.MyCommand.Path -Parent) -Parent
+$logFile = Join-Path $rootDir "vs-open.log"
 "[$([datetime]::Now)] Open-Solutions.ps1 INICIADO — Api=$Api  PSVersion=$($PSVersionTable.PSVersion)" | Out-File $logFile -Append
 
 # Sanitiza $Api: se for um objeto serializado (@{name=...}), extrai o nome
@@ -20,7 +21,7 @@ $configPath = Join-Path $scriptDir "..\config\environments.json"
 "[$([datetime]::Now)] configPath=$configPath  existe=$(Test-Path $configPath)" | Out-File $logFile -Append
 
 $raw    = Get-Content $configPath -Raw -Encoding UTF8
-$raw    = $raw -replace '(?m)//.*$', ''
+$raw    = $raw -replace '(?m)^\s*//.*$', ''
 $config = $raw | ConvertFrom-Json
 
 # Filtra APIs conforme parametro -Api

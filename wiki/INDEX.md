@@ -58,6 +58,15 @@
 
 ---
 
+## Segurança — Regra permanente
+
+> **Nunca commitar arquivos com API keys, senhas ou configurações sensíveis** (ex: `environments.json` com chave real, `appsettings.json` com connection strings de produção, qualquer arquivo `.env`).
+> - Use `dotnet user-secrets` para projetos .NET
+> - Mantenha arquivos sensíveis no `.gitignore`
+> - Se subiu por acidente: revogue a key imediatamente, não basta deletar o arquivo
+
+---
+
 ## Convenção de nomes
 
 ```

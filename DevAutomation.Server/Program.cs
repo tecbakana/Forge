@@ -10,10 +10,18 @@ builder.Services.AddSingleton<ConfigService>();
 builder.Services.AddHttpClient<GeminiService>();
 builder.Services.AddSingleton<OrchestratorService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<OrchestratorService>());
+builder.Services.AddSwaggerGen();
 
 builder.WebHost.UseUrls("http://localhost:8080");
 
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Forge API v1");
+    c.RoutePrefix = "swagger";
+});
 
 // Serve o painel HTML estático da pasta original
 var panelDir = builder.Configuration["DevAutomation:PanelDir"]!;
@@ -26,7 +34,8 @@ app.UseStaticFiles(new StaticFileOptions
 app.MapFallback(async context =>
 {
     if (!context.Request.Path.StartsWithSegments("/api") &&
-        !context.Request.Path.StartsWithSegments("/hub"))
+        !context.Request.Path.StartsWithSegments("/hub") &&
+        !context.Request.Path.StartsWithSegments("/swagger"))
     {
         var indexPath = Path.Combine(panelDir, "index.html");
         context.Response.ContentType = "text/html; charset=utf-8";

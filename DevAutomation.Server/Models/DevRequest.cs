@@ -28,7 +28,10 @@ public class DevRequest
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = "pendente";
-    // pendente | aguardando_aprovacao | in_progress | done | error
+    // pendente | aguardando_aprovacao | in_progress | impeditivo | done | error | cancelado
+
+    [JsonPropertyName("impeditivo")]
+    public bool Impeditivo { get; set; } = false;
 
     [JsonPropertyName("resultado")]
     public string? Resultado { get; set; }
@@ -41,6 +44,12 @@ public class DevRequest
 
     [JsonPropertyName("timestamp")]
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyName("pendencias")]
+    public string? Pendencias { get; set; }
+
+    [JsonPropertyName("resposta_usuario")]
+    public string? RespostaUsuario { get; set; }
 
     [JsonPropertyName("timestamp_atualizacao")]
     public DateTime? TimestampAtualizacao { get; set; }

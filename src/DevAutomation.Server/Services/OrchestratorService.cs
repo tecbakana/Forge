@@ -98,6 +98,15 @@ public class OrchestratorService : BackgroundService
         var targetDir = request.DiretorioAlvo ?? "T:\\devautomation";
         var prompt    = request.PromptAgente ?? request.Descricao;
 
+        // Se houver resposta do usuário a um impedimento anterior, inclui contexto
+        if (!string.IsNullOrEmpty(request.Pendencias) && !string.IsNullOrEmpty(request.RespostaUsuario))
+        {
+            prompt = $"{prompt}\n\n--- CONTEXTO ADICIONAL ---\nVocê havia solicitado esclarecimentos: {request.Pendencias}\nResposta do usuário: {request.RespostaUsuario}";
+        }
+
+        // Instrui Claude a sinalizar impeditivos de forma estruturada
+        prompt = "REGRA OBRIGATÓRIA: Se você precisar de qualquer informação antes de implementar, ou se houver qualquer ambiguidade que impeça a implementação segura, você DEVE responder SOMENTE com este JSON — sem texto antes, sem texto depois, sem markdown:\n{\"impeditivo\": true, \"pendencias\": \"descreva suas dúvidas aqui\"}\nNão escreva código, não escreva explicação, não use markdown. Somente o JSON acima.\n\n---\n\n" + prompt;
+
         var agentModel = new Dictionary<string, string>
         {
             { "alto","claude-sonnet-4-6" },
@@ -112,8 +121,9 @@ public class OrchestratorService : BackgroundService
             var psi = new ProcessStartInfo
             {
                 FileName               = _claudePath,
-                Arguments              = $"--dangerously-skip-permissions --print -p \"{EscapeArg(prompt)}\"--model \"{EscapeArg(agentModel)}\"",
+                Arguments              = $"--dangerously-skip-permissions --print --model \"{agentModel}\"",
                 WorkingDirectory       = targetDir,
+                RedirectStandardInput  = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError  = true,
                 UseShellExecute        = false,
@@ -122,6 +132,9 @@ public class OrchestratorService : BackgroundService
 
             using var process = Process.Start(psi)!;
             _runningProcesses[request.Id] = process;
+
+            await process.StandardInput.WriteAsync(prompt);
+            process.StandardInput.Close();
 
             var output = await process.StandardOutput.ReadToEndAsync();
             var error  = await process.StandardError.ReadToEndAsync();
@@ -138,8 +151,23 @@ public class OrchestratorService : BackgroundService
                 return;
             }
 
-            request.Status    = process.ExitCode == 0 ? "done" : "error";
-            request.Resultado = process.ExitCode == 0 ? output : error;
+            if (TryParseImpeditivo(output, out var pendencias))
+            {
+                request.Status     = "impeditivo";
+                request.Pendencias = pendencias;
+                request.Resultado  = null;
+            }
+            else if (process.ExitCode == 0 && LooksLikeImpeditivo(output))
+            {
+                request.Status     = "impeditivo";
+                request.Pendencias = output.Trim();
+                request.Resultado  = null;
+            }
+            else
+            {
+                request.Status    = process.ExitCode == 0 ? "done" : "error";
+                request.Resultado = process.ExitCode == 0 ? output : error;
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -226,12 +254,47 @@ public class OrchestratorService : BackgroundService
                     }
                 }
                 break;
+            case "retomar":
+                await DispatchAsync(request, file);
+                break;
             case "ignorar":
                 File.Delete(file);
                 break;
         }
 
         return true;
+    }
+
+    private static bool LooksLikeImpeditivo(string output)
+    {
+        var trimmed = output.TrimEnd();
+        if (string.IsNullOrWhiteSpace(trimmed)) return false;
+        // Última linha termina com '?' — agente está perguntando
+        var lastLine = trimmed.Split('\n').Last(l => !string.IsNullOrWhiteSpace(l));
+        return lastLine.TrimEnd().EndsWith('?');
+    }
+
+    private static bool TryParseImpeditivo(string output, out string? pendencias)
+    {
+        pendencias = null;
+        try
+        {
+            var start = output.LastIndexOf("{\"impeditivo\"");
+            if (start < 0) start = output.LastIndexOf("{ \"impeditivo\"");
+            if (start < 0) return false;
+
+            var end = output.IndexOf('}', start);
+            if (end < 0) return false;
+
+            var doc = JsonSerializer.Deserialize<JsonElement>(output[start..(end + 1)]);
+            if (doc.TryGetProperty("impeditivo", out var imp) && imp.ValueKind == JsonValueKind.True)
+            {
+                pendencias = doc.TryGetProperty("pendencias", out var p) ? p.GetString() : null;
+                return true;
+            }
+        }
+        catch { }
+        return false;
     }
 
     private static string EscapeArg(string s) => s.Replace("\"", "\\\"");

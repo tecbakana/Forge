@@ -1,0 +1,18 @@
+{
+  "id": "forge-rag-fase3-orquestrador",
+  "api": "forge",
+  "tipo": "feature",
+  "impacto": "alto",
+  "descricao": "Forge RAG — Fase 3: Injeção de contexto no orchestrador",
+  "detalhes": "Modificar T:\\Developer\\RepositorioTrabalho\\tecbakana\\Forge\\src\\services\\orchestratorService.ts para injetar contexto RAG antes de despachar a dev-request ao agente.\n\n**Depende das Fases 1 e 2 implementadas.**\n\n**Onde alterar:**\nNa função dispatch() (ou equivalente), antes da chamada buildPrompt() / criação das mensagens para o LLM:\n\n```typescript\n// 1. Buscar contexto relevante\nconst chunks = await ragService.query(\n  request.descricao + ' ' + (request.detalhes ?? ''),\n  topK = 5,\n  filtrosProjeto: request.api ? [request.api] : undefined\n);\n\n// 2. Formatar contexto\nconst contextoRag = chunks.length > 0\n  ? formatarContextoRag(chunks)\n  : '';\n\n// 3. Injetar no system prompt\nconst systemPrompt = buildSystemPrompt(request, contextoRag);\n```\n\n**Função formatarContextoRag(chunks):**\n```\n--- CONTEXTO RELEVANTE DA BASE DE CONHECIMENTO ---\n[1] Fonte: wiki/cmsx/cmsx-arch-ntier.md | Tipo: arch | Projeto: cmsx\n<conteudo do chunk>\n\n[2] Fonte: dev-requests/forge2-fase1-setup.json | Tipo: dev-request | Projeto: forge\n<conteudo do chunk>\n...\n--- FIM DO CONTEXTO ---\n```\n\n**Onde injetar:**\n- No system prompt, ANTES das regras de comportamento do agente (REGRA OBRIGATÓRIA: Se você precisar...)\n- Contexto deve ser o primeiro bloco do system prompt\n\n**Logging:**\n- Logar via pino quais chunks foram injetados para cada dev-request (nível info)\n- Formato: { devRequestId, chunksUsados: [ { fonte, tipo, score } ] }\n\n**Comportamento quando RAG indisponível:**\n- ragService.query() já retorna [] em caso de falha (best-effort)\n- Se chunks === [], simplesmente não adicionar o bloco de contexto\n- Nunca bloquear dispatch por falha no RAG\n\n**Observações:**\n- Não alterar a lógica de tool execution, streaming nem status management\n- Manter compatibilidade com o campo prompt_agente (override manual ainda prevalece)\n- Se prompt_agente estiver preenchido, ainda injetar contexto RAG antes dele",
+  "url_externa": null,
+  "status": "pendente",
+  "impeditivo": false,
+  "resultado": null,
+  "prompt_agente": null,
+  "diretorio_alvo": "T:\\Developer\\RepositorioTrabalho\\tecbakana\\Forge",
+  "timestamp": "2026-04-22T00:00:00Z",
+  "pendencias": null,
+  "resposta_usuario": null,
+  "timestamp_atualizacao": "2026-04-22T00:00:00Z"
+}

@@ -592,16 +592,19 @@ body {
   font-weight: 700;
 }
 
-.kanban-col-header.col-backlog    { background: var(--accent-light); color: var(--accent); }
-.kanban-col-header.col-aguardando { background: var(--yellow-light); color: var(--yellow); }
-.kanban-col-header.col-inprogress { background: #f3f0ff; color: var(--accent2); }
-.kanban-col-header.col-done       { background: var(--green-light); color: var(--green); }
-.kanban-col-header.col-error      { background: var(--red-light); color: var(--red); }
-.kanban-col-header.col-cancelado  { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.kanban-col-header.col-backlog      { background: var(--accent-light); color: var(--accent); }
+.kanban-col-header.col-aguardando   { background: var(--yellow-light); color: var(--yellow); }
+.kanban-col-header.col-inprogress   { background: #f3f0ff; color: var(--accent2); }
+.kanban-col-header.col-impeditivo   { background: #fff7ed; color: #ea580c; }
+.kanban-col-header.col-done         { background: var(--green-light); color: var(--green); }
+.kanban-col-header.col-error        { background: var(--red-light); color: var(--red); }
+.kanban-col-header.col-cancelado    { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
 
 .devreq-card.cancelado .devreq-desc { text-decoration: line-through; opacity: .6; }
+.devreq-card.impeditivo { border-left: 3px solid #ea580c; }
 
-html[data-theme="dark"] .kanban-col-header.col-inprogress { background: #7c4dff18; }
+html[data-theme="dark"] .kanban-col-header.col-inprogress  { background: #7c4dff18; }
+html[data-theme="dark"] .kanban-col-header.col-impeditivo  { background: #431407; color: #fb923c; }
 
 .kanban-col-body {
   display: flex;
@@ -622,6 +625,8 @@ html[data-theme="dark"] .kanban-col-header.col-inprogress { background: #7c4dff1
   flex-direction: column;
   gap: 8px;
   transition: box-shadow var(--transition);
+  cursor: pointer;
+  user-select: none;
 }
 .devreq-card:hover { box-shadow: var(--shadow-md); }
 
@@ -643,42 +648,52 @@ html[data-theme="dark"] .kanban-col-header.col-inprogress { background: #7c4dff1
 .devreq-desc { font-size: 13px; color: var(--text); line-height: 1.5; font-weight: 500; }
 .devreq-detail { font-size: 12px; color: var(--text-2); line-height: 1.5; }
 
-.devreq-toggle {
+.devreq-pendencia-hint {
   font-size: 11px;
-  color: var(--accent);
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
+  color: var(--yellow);
+  font-weight: 500;
 }
-.devreq-toggle:hover { text-decoration: underline; }
 
 .devreq-resultado {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-2);
   font-family: var(--mono);
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 8px;
-  max-height: 80px;
+  padding: 8px 10px;
+  max-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-all;
   line-height: 1.4;
 }
 
-.devreq-body {
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
-  margin-top: 2px;
+.devreq-markdown {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  max-height: 260px;
+  overflow-y: auto;
 }
-.devreq-body.open { display: flex; }
+.devreq-markdown p  { margin-bottom: 6px; }
+.devreq-markdown ul { margin-left: 18px; margin-bottom: 6px; }
+.devreq-markdown li { margin-bottom: 2px; }
+.devreq-markdown code { background: var(--border); padding: 1px 4px; border-radius: 3px; font-family: var(--mono); }
+.devreq-markdown pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px; overflow-x: auto; }
+.devreq-markdown strong { color: var(--text); }
+
+.drd-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
 
 .kanban-empty {
   color: var(--muted);
@@ -720,11 +735,36 @@ html[data-theme="dark"] .kanban-col-header.col-inprogress { background: #7c4dff1
   min-width: 480px;
   max-width: 560px;
   width: 90%;
+  max-height: 88vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
+
+.collapsible-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.collapsible-label:hover { color: var(--text); }
+.collapsible-caret {
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform var(--transition);
+  margin-left: 6px;
+}
+.collapsible-caret.collapsed { transform: rotate(-90deg); }
+.collapsible-body {
+  overflow: hidden;
+  transition: max-height .2s ease, opacity .2s ease;
+  max-height: 500px;
+  opacity: 1;
+}
+.collapsible-body.collapsed { max-height: 0; opacity: 0; }
 
 .modal-header {
   display: flex;
@@ -748,6 +788,18 @@ html[data-theme="dark"] .kanban-col-header.col-inprogress { background: #7c4dff1
 .modal-form-grid .form-group.full { grid-column: 1 / -1; }
 
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ── RUN TARGETS ── */
+.run-targets-section { display: flex; flex-direction: column; gap: 6px; }
+.run-targets-header { display: flex; align-items: center; justify-content: space-between; }
+.run-targets-label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .4px; }
+.run-target-row { display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 6px; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; }
+.run-target-row input { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 12px; color: var(--text); font-family: var(--mono); width: 100%; }
+.run-target-row input:focus { outline: none; border-color: var(--accent); }
+.run-target-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 4px; }
+.run-target-remove:hover { color: var(--red); background: var(--red-light); }
+.run-target-col-labels { display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 6px; padding: 0 8px; }
+.run-target-col-labels span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
 
 .empty-state {
   text-align: center;
@@ -1200,6 +1252,20 @@ select option { background: var(--surface); }
   line-height: 1.6;
 }
 
+.proj-start-row {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-start {
+  background: var(--green-light);
+  color: var(--green);
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+.btn-start:hover:not(:disabled) { background: var(--green); color: #fff; }
+
 .proj-section {
   display: flex;
   flex-direction: column;
@@ -1528,6 +1594,63 @@ select option { background: var(--surface); }
 .mt-16 { margin-top: 16px; }
 .w-full { width: 100%; }
 .text-muted { color: var(--muted); font-size: 12px; }
+
+/* ── WIKI ────────────────────────────────────────── */
+.wiki-layout {
+  display: flex;
+  height: 100%;
+  gap: 0;
+  overflow: hidden;
+}
+.wiki-tree {
+  width: 240px;
+  min-width: 200px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px 0;
+  flex-shrink: 0;
+}
+.wiki-tree-group { margin-bottom: 8px; }
+.wiki-tree-folder {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  padding: 6px 16px 2px;
+}
+.wiki-tree-file {
+  display: block;
+  padding: 5px 16px 5px 24px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background .12s;
+}
+.wiki-tree-file:hover  { background: var(--hover); }
+.wiki-tree-file.active { background: var(--accent-bg, #e8f0fe); color: var(--accent, #4a90e2); font-weight: 600; }
+.wiki-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px;
+  line-height: 1.7;
+}
+.wiki-content h1 { font-size: 1.6rem; margin-bottom: 16px; }
+.wiki-content h2 { font-size: 1.2rem; margin-top: 28px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.wiki-content h3 { font-size: 1rem; margin-top: 20px; font-weight: 600; }
+.wiki-content code { background: var(--code-bg, #f4f4f5); padding: 1px 5px; border-radius: 4px; font-size: .875em; }
+.wiki-content pre  { background: var(--code-bg, #f4f4f5); padding: 14px 16px; border-radius: 6px; overflow-x: auto; }
+.wiki-content pre code { background: none; padding: 0; }
+.wiki-content table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .9rem; }
+.wiki-content th, .wiki-content td { border: 1px solid var(--border); padding: 7px 12px; text-align: left; }
+.wiki-content th { background: var(--hover); font-weight: 600; }
+.wiki-content blockquote { border-left: 3px solid var(--accent, #4a90e2); margin: 0; padding: 4px 16px; color: var(--muted); }
+.wiki-content a { color: var(--accent, #4a90e2); text-decoration: none; }
+.wiki-content a:hover { text-decoration: underline; }
+.wiki-placeholder { color: var(--muted); margin-top: 40px; text-align: center; }
 </style>
 </head>
 <body>
@@ -1569,6 +1692,10 @@ select option { background: var(--surface); }
     <div class="nav-separator"></div>
     <div class="nav-item" data-view="roadmap" onclick="navigate('roadmap', this)">
       <span class="nav-icon">◉</span> Roadmap
+    </div>
+    <div class="nav-separator"></div>
+    <div class="nav-item" data-view="wiki" onclick="navigate('wiki', this)">
+      <span class="nav-icon">📖</span> Wiki
     </div>
   </nav>
 
@@ -1709,6 +1836,16 @@ select option { background: var(--surface); }
             <input class="form-input" id="reg-desktop" type="number" value="1" min="1" style="width:80px" />
           </div>
         </div>
+        <div class="run-targets-section mt-16">
+          <div class="run-targets-header">
+            <span class="run-targets-label">Alvos de inicialização (runTargets)</span>
+            <button class="btn btn-ghost btn-sm" onclick="addRunTargetRow('reg-runtargets')">+ Adicionar</button>
+          </div>
+          <div class="run-target-col-labels" id="reg-runtargets-labels" style="display:none">
+            <span>Nome</span><span>Diretório</span><span>Comando</span><span></span>
+          </div>
+          <div id="reg-runtargets"></div>
+        </div>
         <div class="flex gap-8 mt-16">
           <button class="btn btn-primary btn-sm" onclick="registerApp()">✓ Cadastrar</button>
           <button class="btn btn-ghost btn-sm"   onclick="toggleRegisterForm()">Cancelar</button>
@@ -1748,7 +1885,12 @@ select option { background: var(--surface); }
     <div class="view" id="view-devrequests">
       <div class="kanban-toolbar">
         <span class="kanban-toolbar-title" id="kanban-total-label"></span>
-        <button class="btn btn-primary btn-sm" onclick="openNewDevReqModal()">+ Nova Dev Request</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="kanban-project-filter" onchange="applyKanbanFilter()" style="font-size:12px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;outline:none">
+            <option value="">Todos os projetos</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openNewDevReqModal()">+ Nova Dev Request</button>
+        </div>
       </div>
       <div class="kanban-board" id="kanban-board">
         <!-- Backlog -->
@@ -1781,6 +1923,17 @@ select option { background: var(--surface); }
             <span class="col-count" id="kcount-inprogress">0</span>
           </div>
           <div class="kanban-col-body" id="kcol-inprogress">
+            <div class="kanban-empty">Sem itens</div>
+          </div>
+        </div>
+        <!-- Impeditivo -->
+        <div class="kanban-col">
+          <div class="kanban-col-header col-impeditivo">
+            <span class="col-dot" style="background:#ea580c"></span>
+            Impeditivo
+            <span class="col-count" id="kcount-impeditivo">0</span>
+          </div>
+          <div class="kanban-col-body" id="kcol-impeditivo">
             <div class="kanban-empty">Sem itens</div>
           </div>
         </div>
@@ -1875,6 +2028,18 @@ select option { background: var(--surface); }
       </div>
     </div>
 
+    <!-- ── VIEW: WIKI ── -->
+    <div class="view" id="view-wiki">
+      <div class="wiki-layout">
+        <div class="wiki-tree" id="wiki-tree">
+          <div class="wiki-placeholder">Carregando...</div>
+        </div>
+        <div class="wiki-content" id="wiki-content">
+          <div class="wiki-placeholder">Selecione um documento no painel à esquerda.</div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 
   <!-- LOG BAR -->
@@ -1907,6 +2072,67 @@ select option { background: var(--surface); }
 <!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
 
+<!-- MODAL: EDITAR API -->
+<div class="modal-overlay" id="modal-edit-api" onclick="if(event.target===this) closeEditApiModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Editar API — <span id="edit-api-title"></span></span>
+      <button class="modal-close" onclick="closeEditApiModal()">✕</button>
+    </div>
+    <div class="modal-form-grid">
+      <input type="hidden" id="edit-api-name" />
+      <div class="form-group">
+        <label class="form-label">Tipo de config</label>
+        <select class="form-input" id="edit-configtype">
+          <option value="json">appsettings.json</option>
+          <option value="xml">Web.config (XML)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Desktop virtual</label>
+        <input class="form-input" id="edit-desktop" type="number" min="1" style="width:80px" />
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Arquivo de config</label>
+        <div class="form-row">
+          <input class="form-input" id="edit-configfile" type="text" />
+          <button class="btn btn-ghost btn-sm" onclick="browseFile('edit-configfile', 'Config files|*.json;*.config')">...</button>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Repositório Git</label>
+        <div class="form-row">
+          <input class="form-input" id="edit-gitrepo" type="text" />
+          <button class="btn btn-ghost btn-sm" onclick="browseFolder('edit-gitrepo')">...</button>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Solution (.sln)</label>
+        <div class="form-row">
+          <input class="form-input" id="edit-sln" type="text" />
+          <button class="btn btn-ghost btn-sm" onclick="browseFile('edit-sln', 'Solution files|*.sln')">...</button>
+        </div>
+      </div>
+      <div class="form-group full">
+        <div class="run-targets-section">
+          <div class="run-targets-header">
+            <span class="run-targets-label">Alvos de inicialização (runTargets)</span>
+            <button class="btn btn-ghost btn-sm" onclick="addRunTargetRow('edit-runtargets')">+ Adicionar</button>
+          </div>
+          <div class="run-target-col-labels" id="edit-runtargets-labels" style="display:none">
+            <span>Nome</span><span>Diretório</span><span>Comando</span><span></span>
+          </div>
+          <div id="edit-runtargets"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeEditApiModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveEditApi()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: NOVA DEV REQUEST -->
 <div class="modal-overlay" id="modal-new-devreq" onclick="if(event.target===this) closeNewDevReqModal()">
   <div class="modal-box">
@@ -1917,7 +2143,7 @@ select option { background: var(--surface); }
     <div class="modal-form-grid">
       <div class="form-group">
         <label class="form-label">API / Projeto</label>
-        <select class="form-input" id="nr-api">
+        <select class="form-input" id="nr-api" onchange="onDevReqApiChange(this.value)">
           <option value="devautomation">devautomation</option>
           <option value="cmsx">cmsx</option>
           <option value="salematic">salematic</option>
@@ -1951,8 +2177,13 @@ select option { background: var(--surface); }
         <input class="form-input" id="nr-descricao" type="text" placeholder="O que deve ser feito..." />
       </div>
       <div class="form-group full">
-        <label class="form-label">Detalhes (opcional)</label>
-        <textarea class="form-input" id="nr-detalhes" rows="3" style="resize:vertical" placeholder="Contexto adicional, regras, exemplos..."></textarea>
+        <label class="form-label collapsible-label" onclick="toggleCollapsible('nr-detalhes-body','nr-detalhes-caret')">
+          Detalhes (opcional)
+          <span class="collapsible-caret collapsed" id="nr-detalhes-caret">&#9660;</span>
+        </label>
+        <div class="collapsible-body collapsed" id="nr-detalhes-body">
+          <textarea class="form-input" id="nr-detalhes" rows="3" style="resize:vertical;width:100%;margin-top:6px" placeholder="Contexto adicional, regras, exemplos..."></textarea>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1962,7 +2193,108 @@ select option { background: var(--surface); }
   </div>
 </div>
 
+<!-- MODAL: EDITAR DEV REQUEST -->
+<div class="modal-overlay" id="modal-edit-devreq" onclick="if(event.target===this) closeEditDevReqModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Editar Dev Request</span>
+      <button class="modal-close" onclick="closeEditDevReqModal()">✕</button>
+    </div>
+    <input type="hidden" id="ed-id" />
+    <div class="modal-form-grid">
+      <div class="form-group">
+        <label class="form-label">API / Projeto</label>
+        <select class="form-input" id="ed-api">
+          <option value="devautomation">devautomation</option>
+          <option value="cmsx">cmsx</option>
+          <option value="salematic">salematic</option>
+          <option value="limpmax">limpmax</option>
+          <option value="taas">taas</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="ed-tipo">
+          <option value="feature">feature</option>
+          <option value="bugfix">bugfix</option>
+          <option value="config">config</option>
+          <option value="refactor">refactor</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Impacto</label>
+        <select class="form-input" id="ed-impacto">
+          <option value="baixo">baixo</option>
+          <option value="medio">medio</option>
+          <option value="alto">alto</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Diretório alvo</label>
+        <input class="form-input" id="ed-dir" type="text" placeholder="T:\dev\projeto" />
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Descrição <span style="color:var(--red)">*</span></label>
+        <input class="form-input" id="ed-descricao" type="text" />
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Detalhes (opcional)</label>
+        <textarea class="form-input" id="ed-detalhes" rows="4" style="resize:vertical;width:100%"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeEditDevReqModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="submitEditDevReq()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETALHE DEV REQUEST -->
+<div class="modal-overlay" id="modal-devreq-detail" onclick="if(event.target===this) closeDevReqModal()">
+  <div class="modal-box" style="max-width:680px;gap:14px">
+    <div class="modal-header">
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+        <span class="modal-title" id="drd-descricao" style="font-size:15px"></span>
+        <div class="devreq-meta" id="drd-meta"></div>
+      </div>
+      <button class="modal-close" onclick="closeDevReqModal()">✕</button>
+    </div>
+    <div id="drd-section-detalhes" class="drd-section" style="display:none">
+      <div class="form-label">Detalhes</div>
+      <div id="drd-detalhes" class="devreq-markdown"></div>
+    </div>
+    <div id="drd-section-resultado" class="drd-section" style="display:none">
+      <div class="form-label">Resultado</div>
+      <div id="drd-resultado" class="devreq-resultado"></div>
+    </div>
+    <div id="drd-section-pendencias" class="drd-section" style="display:none">
+      <div class="form-label" style="color:var(--yellow)">Pendências do agente</div>
+      <div id="drd-pendencias" class="devreq-markdown"></div>
+      <div class="form-group" style="margin-top:6px">
+        <label class="form-label collapsible-label" onclick="toggleCollapsible('drd-resposta-body','drd-resposta-caret')">
+          Sua resposta
+          <span class="collapsible-caret" id="drd-resposta-caret">&#9660;</span>
+        </label>
+        <div class="collapsible-body" id="drd-resposta-body">
+          <textarea class="form-input" id="drd-resposta" rows="3" style="resize:vertical;width:100%;margin-top:6px" placeholder="Responda as dúvidas do agente..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="drd-footer"></div>
+  </div>
+</div>
+
 <script>
+// =============================================================================
+// COLLAPSIBLE
+// =============================================================================
+function toggleCollapsible(bodyId, caretId) {
+  const body  = document.getElementById(bodyId);
+  const caret = document.getElementById(caretId);
+  const collapsed = body.classList.toggle('collapsed');
+  caret.classList.toggle('collapsed', collapsed);
+}
+
 // =============================================================================
 // CONFIG
 // =============================================================================
@@ -1976,6 +2308,7 @@ const state = {
 };
 
 let config = null;
+let devReqsCache = [];
 
 // =============================================================================
 // NAVEGAÇÃO
@@ -1989,6 +2322,7 @@ const viewTitles = {
   templates:          'Templates',
   roadmap:            'Roadmap',
   'projeto-detalhe':  'Projeto',
+  wiki:               'Wiki',
 };
 
 function navigate(view, el) {
@@ -2001,6 +2335,7 @@ function navigate(view, el) {
   if (view === 'git')         renderGitDetailGrid();
   if (view === 'roadmap')     renderRoadmap();
   if (view === 'devrequests') loadDevRequests();
+  if (view === 'wiki')        loadWikiIndex();
 }
 
 function navigateToProject(id) {
@@ -2217,86 +2552,78 @@ async function loadDevRequests() {
     const res   = await fetch(`${API_BASE}/devrequests`);
     const items = await res.json();
     const arr   = Array.isArray(items) ? items : (items ? [items] : []);
+    devReqsCache = arr;
 
-    // Agrupa por coluna kanban
+    // Popula o select de filtro com os projetos únicos
+    const sel = document.getElementById('kanban-project-filter');
+    if (sel) {
+      const currentVal = sel.value;
+      const projects = [...new Set(arr.map(i => i.api).filter(Boolean))].sort();
+      sel.innerHTML = '<option value="">Todos os projetos</option>' +
+        projects.map(p => `<option value="${p}"${p === currentVal ? ' selected' : ''}>${p}</option>`).join('');
+    }
+
+    // badge sidebar (sempre sobre o total real, não o filtrado)
+    const ativasTotal = arr.filter(i =>
+      ['pendente','pending','backlog','aguardando_aprovacao','aguardando','impeditivo'].includes(i.status)
+    ).length;
+    const badge = document.getElementById('devreq-count');
+    if (badge) {
+      badge.textContent = ativasTotal;
+      badge.style.display = ativasTotal > 0 ? 'inline-block' : 'none';
+    }
+    const dashCount = document.getElementById('dash-devreq-count');
+    if (dashCount) dashCount.textContent = ativasTotal;
+
+    renderKanban(arr);
+  } catch(e) {
+    // silencioso durante startup
+  }
+}
+
+function applyKanbanFilter() {
+  const sel = document.getElementById('kanban-project-filter');
+  const project = sel ? sel.value : '';
+  const filtered = project ? devReqsCache.filter(i => i.api === project) : devReqsCache;
+  renderKanban(filtered);
+}
+
+function renderKanban(arr) {
     const cols = {
       backlog:    arr.filter(i => i.status === 'pendente' || i.status === 'pending' || i.status === 'backlog'),
       aguardando: arr.filter(i => i.status === 'aguardando_aprovacao' || i.status === 'aguardando'),
       inprogress: arr.filter(i => i.status === 'in_progress'),
+      impeditivo: arr.filter(i => i.status === 'impeditivo'),
       done:       arr.filter(i => i.status === 'done' || i.status === 'concluido'),
       error:      arr.filter(i => i.status === 'error'),
       cancelado:  arr.filter(i => i.status === 'cancelado'),
     };
 
-    const ativas = cols.backlog.length + cols.aguardando.length;
+    const ativas = cols.backlog.length + cols.aguardando.length + cols.impeditivo.length;
     const total  = arr.length;
 
-    // label toolbar
     const totalLabel = document.getElementById('kanban-total-label');
     if (totalLabel) totalLabel.textContent = `${total} request${total !== 1 ? 's' : ''} · ${ativas} ativa${ativas !== 1 ? 's' : ''}`;
-
-    // badge sidebar
-    const badge = document.getElementById('devreq-count');
-    if (ativas > 0) {
-      badge.textContent = ativas;
-      badge.style.display = 'inline-block';
-    } else {
-      badge.style.display = 'none';
-    }
-
-    // dashboard counter
-    const dashCount = document.getElementById('dash-devreq-count');
-    if (dashCount) dashCount.textContent = ativas;
 
     const renderCard = (item) => {
       const st = item.status;
       const impactColor = item.impacto === 'baixo' ? 'var(--green)' : item.impacto === 'medio' ? 'var(--yellow)' : 'var(--red)';
-      const bodyId = `devreq-body-${item.id}`;
-
-      let actions = '';
-      if (st === 'aguardando_aprovacao' || st === 'pendente' || st === 'pending' || st === 'backlog') {
-        actions = `<button class="btn btn-primary btn-sm" onclick="devRequestAction('${item.id}','${item.api}','aprovar')" style="background:var(--yellow);color:#000">Aprovar</button>
-                   <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','cancelar')" style="color:var(--muted)">Cancelar</button>
-                   <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','ignorar')">Ignorar</button>`;
-      } else if (st === 'in_progress') {
-        actions = `<button class="btn btn-primary btn-sm" onclick="devRequestAction('${item.id}','${item.api}','completar')" style="background:var(--green);color:#fff">Completar</button>
-                   <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','cancelar')" style="color:var(--muted)">Cancelar</button>`;
-      } else if (st === 'error') {
-        actions = `<button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','implementar')">Retentar</button>
-                   <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','cancelar')" style="color:var(--muted)">Cancelar</button>
-                   <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','ignorar')">Remover</button>`;
-      }
-
-      const hasBody = !!(item.detalhes || item.url_externa || item.resultado);
-      const toggleBtn = hasBody
-        ? `<button class="devreq-toggle" onclick="devreqToggle('${bodyId}',this)">ver mais ▾</button>`
-        : '';
-
-      const urlTag = item.url_externa
-        ? `<div class="devreq-detail" style="color:var(--yellow)">API externa: <code>${item.url_externa}</code></div>`
-        : '';
-      const resultadoTag = item.resultado
-        ? `<div class="devreq-resultado">${item.resultado}</div>`
+      const idShort = item.id.length > 8 ? item.id.substring(0, 8) : item.id;
+      const pendenciaHint = item.pendencias
+        ? `<div class="devreq-pendencia-hint">pendência do agente</div>`
         : '';
 
       return `
-        <div class="devreq-card impacto-${item.impacto}${st === 'cancelado' ? ' cancelado' : ''}" id="devreq-${item.id}">
+        <div class="devreq-card impacto-${item.impacto}${st === 'cancelado' ? ' cancelado' : ''}${st === 'impeditivo' ? ' impeditivo' : ''}" id="devreq-${item.id}" onclick="openDevReqModal('${item.id}')">
           <div class="devreq-meta">
             <span class="devreq-tag">${item.api}</span>
             <span class="devreq-tag">${item.tipo}</span>
             <span class="devreq-tag" style="color:${impactColor}">impacto ${item.impacto}</span>
+            <span class="devreq-tag" style="color:var(--muted);font-family:monospace" title="${item.id}">#${idShort}</span>
           </div>
           <div class="devreq-desc">${item.descricao || ''}</div>
-          <div class="devreq-actions">
-            <div class="flex gap-8">${actions}</div>
-            ${toggleBtn}
-          </div>
-          ${hasBody ? `<div class="devreq-body" id="${bodyId}">
-            ${item.detalhes ? `<div class="devreq-detail">${item.detalhes}</div>` : ''}
-            ${urlTag}
-            ${resultadoTag}
-            <div class="devreq-time">${new Date(item.timestamp).toLocaleString('pt-BR')}</div>
-          </div>` : `<div class="devreq-time">${new Date(item.timestamp).toLocaleString('pt-BR')}</div>`}
+          ${pendenciaHint}
+          <div class="devreq-time">${new Date(item.timestamp).toLocaleString('pt-BR')}</div>
         </div>`;
     };
 
@@ -2309,8 +2636,12 @@ async function loadDevRequests() {
         ? list.map(renderCard).join('')
         : `<div class="kanban-empty">Sem itens</div>`;
     }
-  } catch(e) {
-    // silencioso durante startup
+}
+
+function onDevReqApiChange(apiName) {
+  const api = config?.apis?.find(a => a.name === apiName);
+  if (api?.gitRepo) {
+    document.getElementById('nr-dir').value = api.gitRepo;
   }
 }
 
@@ -2319,6 +2650,7 @@ function openNewDevReqModal() {
   const sel = document.getElementById('nr-api');
   if (config?.apis?.length) {
     sel.innerHTML = config.apis.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+    onDevReqApiChange(sel.value);
   }
   document.getElementById('modal-new-devreq').classList.add('show');
   document.getElementById('nr-descricao').focus();
@@ -2365,11 +2697,165 @@ async function submitNewDevReq() {
   }
 }
 
-function devreqToggle(bodyId, btn) {
-  const body = document.getElementById(bodyId);
-  if (!body) return;
-  const expanded = body.classList.toggle('open');
-  btn.textContent = expanded ? 'ver menos ▴' : 'ver mais ▾';
+function openDevReqModal(id) {
+  const item = devReqsCache.find(i => i.id === id);
+  if (!item) return;
+
+  document.getElementById('drd-descricao').textContent = item.descricao || '';
+
+  const impactColor = item.impacto === 'baixo' ? 'var(--green)' : item.impacto === 'medio' ? 'var(--yellow)' : 'var(--red)';
+  const idShort = item.id.length > 8 ? item.id.substring(0, 8) : item.id;
+  document.getElementById('drd-meta').innerHTML = `
+    <span class="devreq-tag">${item.api}</span>
+    <span class="devreq-tag">${item.tipo}</span>
+    <span class="devreq-tag" style="color:${impactColor}">impacto ${item.impacto}</span>
+    <span class="devreq-tag" style="color:var(--muted);font-family:var(--mono)" title="${item.id}">#${idShort}</span>
+    <span class="devreq-tag" style="color:var(--muted)">${new Date(item.timestamp).toLocaleString('pt-BR')}</span>
+  `;
+
+  const secDetalhes = document.getElementById('drd-section-detalhes');
+  if (item.detalhes) {
+    secDetalhes.style.display = '';
+    document.getElementById('drd-detalhes').innerHTML = (typeof marked !== 'undefined')
+      ? marked.parse(item.detalhes)
+      : item.detalhes.replace(/\n/g, '<br>');
+  } else {
+    secDetalhes.style.display = 'none';
+  }
+
+  const secResultado = document.getElementById('drd-section-resultado');
+  if (item.resultado) {
+    secResultado.style.display = '';
+    document.getElementById('drd-resultado').textContent = item.resultado;
+  } else {
+    secResultado.style.display = 'none';
+  }
+
+  const secPendencias = document.getElementById('drd-section-pendencias');
+  if (item.status === 'impeditivo' || item.pendencias) {
+    secPendencias.style.display = '';
+    const pendEl = document.getElementById('drd-pendencias');
+    const pendText = item.pendencias || (item.status === 'impeditivo' ? item.resultado : null);
+    if (pendText) {
+      pendEl.innerHTML = (typeof marked !== 'undefined')
+        ? marked.parse(pendText)
+        : pendText.replace(/\n/g, '<br>');
+    } else {
+      pendEl.innerHTML = '';
+    }
+    const ta = document.getElementById('drd-resposta');
+    ta.value = item.resposta_usuario || '';
+    ta.dataset.id = item.id;
+  } else {
+    secPendencias.style.display = 'none';
+  }
+
+  const st = item.status;
+  let actions = '';
+  if (st === 'aguardando_aprovacao' || st === 'pendente' || st === 'pending' || st === 'backlog') {
+    actions = `<button class="btn btn-primary btn-sm" onclick="devRequestAction('${item.id}','${item.api}','aprovar');closeDevReqModal()" style="background:var(--yellow);color:#000">Aprovar</button>
+               <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','cancelar');closeDevReqModal()" style="color:var(--muted)">Cancelar</button>
+               <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','ignorar');closeDevReqModal()">Ignorar</button>`;
+  } else if (st === 'in_progress') {
+    actions = `<button class="btn btn-primary btn-sm" onclick="devRequestAction('${item.id}','${item.api}','completar');closeDevReqModal()" style="background:var(--green);color:#fff">Completar</button>
+               <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','cancelar');closeDevReqModal()" style="color:var(--muted)">Cancelar</button>`;
+  } else if (st === 'impeditivo') {
+    actions = `<button class="btn btn-primary btn-sm" onclick="responderERetomar('${item.id}','${item.api}')" style="background:#ea580c;color:#fff">Retomar</button>
+               <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','cancelar');closeDevReqModal()" style="color:var(--muted)">Cancelar</button>`;
+  } else if (st === 'error') {
+    actions = `<button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','implementar');closeDevReqModal()">Retentar</button>
+               <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','cancelar');closeDevReqModal()" style="color:var(--muted)">Cancelar</button>
+               <button class="btn btn-ghost btn-sm" onclick="devRequestAction('${item.id}','${item.api}','ignorar');closeDevReqModal()">Remover</button>`;
+  }
+
+  const editBtn = `<button class="btn btn-ghost btn-sm" onclick="openEditDevReqModal('${item.id}')">Editar</button>`;
+  document.getElementById('drd-footer').innerHTML =
+    `<button class="btn btn-ghost btn-sm" onclick="closeDevReqModal()">Fechar</button>${editBtn}${actions}`;
+
+  document.getElementById('modal-devreq-detail').classList.add('show');
+}
+
+function closeDevReqModal() {
+  document.getElementById('modal-devreq-detail').classList.remove('show');
+}
+
+function openEditDevReqModal(id) {
+  const item = devReqsCache.find(i => i.id === id);
+  if (!item) return;
+
+  document.getElementById('ed-id').value       = item.id;
+  document.getElementById('ed-descricao').value = item.descricao || '';
+  document.getElementById('ed-detalhes').value  = item.detalhes || '';
+  document.getElementById('ed-dir').value        = item.diretorio_alvo || '';
+
+  const selApi = document.getElementById('ed-api');
+  if (config?.apis?.length) {
+    selApi.innerHTML = config.apis.map(a => `<option value="${a.name}"${a.name === item.api ? ' selected' : ''}>${a.name}</option>`).join('');
+  } else {
+    [...selApi.options].forEach(o => { o.selected = o.value === item.api; });
+  }
+  document.getElementById('ed-tipo').value    = item.tipo    || 'feature';
+  document.getElementById('ed-impacto').value = item.impacto || 'baixo';
+
+  closeDevReqModal();
+  document.getElementById('modal-edit-devreq').classList.add('show');
+  document.getElementById('ed-descricao').focus();
+}
+
+function closeEditDevReqModal() {
+  document.getElementById('modal-edit-devreq').classList.remove('show');
+}
+
+async function submitEditDevReq() {
+  const id       = document.getElementById('ed-id').value;
+  const descricao = document.getElementById('ed-descricao').value.trim();
+  if (!descricao) { document.getElementById('ed-descricao').focus(); return; }
+
+  const payload = {
+    api:           document.getElementById('ed-api').value,
+    tipo:          document.getElementById('ed-tipo').value,
+    impacto:       document.getElementById('ed-impacto').value,
+    descricao,
+    detalhes:      document.getElementById('ed-detalhes').value.trim() || null,
+    diretorio_alvo: document.getElementById('ed-dir').value.trim() || null,
+  };
+  try {
+    const res  = await fetch(`${API_BASE}/devrequests/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeEditDevReqModal();
+      showToast('Dev Request atualizada.', 'success');
+      await loadDevRequests();
+    } else {
+      showToast('Erro ao salvar: ' + (data.error || ''), 'error');
+    }
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+async function responderERetomar(id, api) {
+  const ta = document.getElementById('drd-resposta');
+  const resposta = ta?.value.trim() || '';
+  try {
+    if (resposta) {
+      const res = await fetch(`${API_BASE}/devrequests/responder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, resposta })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast('Erro ao salvar resposta: ' + (data.error || ''), 'error'); return; }
+    }
+    await devRequestAction(id, api, 'retomar');
+    closeDevReqModal();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
 }
 
 async function devRequestAction(id, api, action) {
@@ -2457,7 +2943,16 @@ function buildApiCards() {
           <span class="meta-val">Desktop ${api.desktop}</span>
         </div>
       </div>
-      <button class="btn btn-danger btn-sm btn-full mt-12" onclick="unregisterApp('${api.name}')">✕ Remover</button>
+      <div class="flex gap-8 mt-12">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openEditApiModal('${api.name}')">Editar</button>
+        <button class="btn btn-danger btn-sm" style="flex:1" onclick="unregisterApp('${api.name}')">✕ Remover</button>
+      </div>
+      ${(api.runTargets?.length ?? 0) > 0 ? `
+      <div class="proj-start-row">
+        <button class="btn btn-sm btn-start" style="width:100%" onclick="startApps('${api.name}', this)" title="Subir ${api.name} em terminais nomeados">
+          &#9654; Startar
+        </button>
+      </div>` : ''}
     </div>`;
 
   document.getElementById('api-grid').innerHTML     = config.apis.map(tpl).join('');
@@ -2607,6 +3102,7 @@ function toggleRegisterForm() {
   const form = document.getElementById('register-form');
   form.classList.toggle('open');
   document.getElementById('btn-register').textContent = form.classList.contains('open') ? '✕ Cancelar' : '+ Cadastrar';
+  if (!form.classList.contains('open')) clearRunTargets('reg-runtargets');
 }
 
 async function browseFolder(inputId) {
@@ -2628,10 +3124,11 @@ async function registerApp() {
   const sln        = document.getElementById('reg-sln').value.trim();
   const desktop    = parseInt(document.getElementById('reg-desktop').value) || 1;
   if (!nome || !configFile || !gitRepo || !sln) { showToast('Preencha todos os campos.', 'info'); return; }
+  const runTargets = collectRunTargets('reg-runtargets');
   try {
     const res = await fetch(`${API_BASE}/apps/register`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ name: nome, configType, configFile, gitRepo, solutionPath: sln, desktop })
+      body: JSON.stringify({ name: nome, configType, configFile, gitRepo, solutionPath: sln, desktop, runTargets })
     });
     const result = await res.json();
     if (result.success) { showToast(`"${nome}" cadastrada!`, 'success'); toggleRegisterForm(); await loadConfig(); }
@@ -2648,6 +3145,102 @@ async function unregisterApp(nome) {
     });
     const result = await res.json();
     if (result.success) { showToast(`"${nome}" removida.`, 'success'); await loadConfig(); }
+  } catch(e) { showToast('Falha: ' + e.message, 'error'); }
+}
+
+// =============================================================================
+// RUN TARGETS
+// =============================================================================
+function addRunTargetRow(containerId, name = '', dir = '', command = '') {
+  const container = document.getElementById(containerId);
+  const labelsId  = containerId + '-labels';
+  document.getElementById(labelsId).style.display = '';
+
+  const row = document.createElement('div');
+  row.className = 'run-target-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Nome (ex: API)" value="${escapeHtmlAttr(name)}" />
+    <div style="display:flex;gap:4px;align-items:center">
+      <input type="text" placeholder="T:\\Dev\\Projeto" value="${escapeHtmlAttr(dir)}" style="flex:1" />
+      <button class="btn btn-ghost btn-sm" style="white-space:nowrap" onclick="browseRunTargetDir(this)">...</button>
+    </div>
+    <input type="text" placeholder="dotnet run" value="${escapeHtmlAttr(command)}" />
+    <button class="run-target-remove" onclick="removeRunTargetRow(this, '${containerId}', '${labelsId}')">✕</button>`;
+  container.appendChild(row);
+}
+
+function browseRunTargetDir(btn) {
+  const dirInput = btn.previousElementSibling;
+  fetch('/api/browse?type=folder').then(r => r.json()).then(res => {
+    if (res.path) dirInput.value = res.path;
+  });
+}
+
+function removeRunTargetRow(btn, containerId, labelsId) {
+  btn.closest('.run-target-row').remove();
+  if (!document.getElementById(containerId).children.length)
+    document.getElementById(labelsId).style.display = 'none';
+}
+
+function collectRunTargets(containerId) {
+  return Array.from(document.getElementById(containerId).querySelectorAll('.run-target-row')).map(row => {
+    const inputs = row.querySelectorAll('input');
+    return { name: inputs[0].value.trim(), dir: inputs[1].value.trim(), command: inputs[2].value.trim() };
+  }).filter(r => r.name || r.dir || r.command);
+}
+
+function clearRunTargets(containerId) {
+  document.getElementById(containerId).innerHTML = '';
+  document.getElementById(containerId + '-labels').style.display = 'none';
+}
+
+function escapeHtmlAttr(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openEditApiModal(nome) {
+  const api = config.apis.find(a => a.name === nome);
+  if (!api) return;
+  document.getElementById('edit-api-name').value        = api.name;
+  document.getElementById('edit-api-title').textContent = api.name;
+  document.getElementById('edit-configtype').value      = api.configType || 'json';
+  document.getElementById('edit-configfile').value      = api.configFile || '';
+  document.getElementById('edit-gitrepo').value         = api.gitRepo || '';
+  document.getElementById('edit-sln').value             = api.solutionPath || '';
+  document.getElementById('edit-desktop').value         = api.desktop || 1;
+  clearRunTargets('edit-runtargets');
+  (api.runTargets || []).forEach(rt => addRunTargetRow('edit-runtargets', rt.name, rt.dir, rt.command));
+  document.getElementById('modal-edit-api').classList.add('show');
+}
+
+function closeEditApiModal() {
+  document.getElementById('modal-edit-api').classList.remove('show');
+}
+
+async function saveEditApi() {
+  const nome = document.getElementById('edit-api-name').value;
+  const body = {
+    name:         nome,
+    configType:   document.getElementById('edit-configtype').value,
+    configFile:   document.getElementById('edit-configfile').value.trim(),
+    gitRepo:      document.getElementById('edit-gitrepo').value.trim(),
+    solutionPath: document.getElementById('edit-sln').value.trim(),
+    desktop:      parseInt(document.getElementById('edit-desktop').value) || 1,
+    runTargets:   collectRunTargets('edit-runtargets')
+  };
+  try {
+    const res = await fetch(`${API_BASE}/apps/update`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(`"${nome}" atualizada.`, 'success');
+      closeEditApiModal();
+      await loadConfig();
+    } else {
+      showToast('Erro: ' + result.error, 'error');
+    }
   } catch(e) { showToast('Falha: ' + e.message, 'error'); }
 }
 
@@ -2986,6 +3579,29 @@ function renderRoadmap() {
   }).join('');
 }
 
+async function startApps(apiName, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Iniciando…';
+  try {
+    const res  = await fetch(`${API_BASE}/start-apps`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api: apiName })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`${apiName}: ${data.launched.join(', ')} iniciado(s)`, 'success');
+    } else {
+      showToast(data.error || 'Nenhum target configurado.', 'error');
+    }
+  } catch(e) {
+    showToast('Falha ao startar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#9654; Startar';
+  }
+}
+
 // =============================================================================
 // PROJETO DETALHE
 // =============================================================================
@@ -3221,6 +3837,79 @@ async function init() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeNewDevReqModal();
 });
+
+// =============================================================================
+// WIKI
+// =============================================================================
+let _wikiCurrentPath = null;
+
+async function loadWikiIndex() {
+  const tree = document.getElementById('wiki-tree');
+  tree.innerHTML = '<div class="wiki-placeholder">Carregando...</div>';
+
+  try {
+    const res   = await fetch(`${API_BASE}/wiki/files`);
+    const files = await res.json();
+
+    const groups = {};
+    files.forEach(f => {
+      const parts  = f.split('/');
+      const folder = parts.length > 1 ? parts[0] : '';
+      const name   = parts[parts.length - 1].replace('.md', '');
+      if (!groups[folder]) groups[folder] = [];
+      groups[folder].push({ path: f, label: name });
+    });
+
+    let html = '';
+    for (const [folder, items] of Object.entries(groups)) {
+      html += `<div class="wiki-tree-group">`;
+      if (folder) html += `<div class="wiki-tree-folder">${folder}</div>`;
+      items.forEach(({ path, label }) => {
+        html += `<div class="wiki-tree-file" onclick="loadWikiFile('${path}')" data-path="${path}">${label}</div>`;
+      });
+      html += `</div>`;
+    }
+
+    tree.innerHTML = html || '<div class="wiki-placeholder">Nenhum documento encontrado.</div>';
+
+    if (files.includes('INDEX.md')) loadWikiFile('INDEX.md');
+  } catch (e) {
+    tree.innerHTML = '<div class="wiki-placeholder">Erro ao carregar wiki.</div>';
+  }
+}
+
+async function loadWikiFile(path) {
+  document.querySelectorAll('.wiki-tree-file').forEach(el => {
+    el.classList.toggle('active', el.dataset.path === path);
+  });
+
+  const content = document.getElementById('wiki-content');
+  content.innerHTML = '<div class="wiki-placeholder">Carregando...</div>';
+
+  try {
+    const res  = await fetch(`${API_BASE}/wiki/file?path=${encodeURIComponent(path)}`);
+    if (!res.ok) { content.innerHTML = '<div class="wiki-placeholder">Documento não encontrado.</div>'; return; }
+    const text = await res.text();
+    content.innerHTML = marked.parse(text);
+
+    content.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (href && href.endsWith('.md') && !href.startsWith('http')) {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          const base   = path.includes('/') ? path.substring(0, path.lastIndexOf('/') + 1) : '';
+          const target = href.startsWith('../') ? href.replace('../', '') : base + href;
+          loadWikiFile(target);
+        });
+      }
+    });
+
+    content.scrollTop = 0;
+    _wikiCurrentPath = path;
+  } catch (e) {
+    content.innerHTML = '<div class="wiki-placeholder">Erro ao carregar documento.</div>';
+  }
+}
 
 init();
 </script>

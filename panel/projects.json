@@ -187,7 +187,7 @@
           "id": "filtro-devrequest",
           "titulo": "Filtro por projeto no Kanban",
           "descricao": "Filtrar os cards do Kanban de Dev Requests por projeto/API.",
-          "status": "planejado",
+          "status": "in_progress",
           "impacto": "baixo"
         },
         {
@@ -230,6 +230,54 @@
           "descricao": "Transferir todas as funcionalidades, integra\u00E7\u00F5es e dados do LimpMaxAgent para o Salematic. Ap\u00F3s conclus\u00E3o, o LimpMaxAgent ser\u00E1 descontinuado.",
           "status": "in_progress",
           "impacto": "alto"
+        }
+      ]
+    }
+  ,
+    {
+      "id": "loja-virtual",
+      "name": "Loja Virtual",
+      "internalName": "cmsx",
+      "description": "Site público de loja virtual multi-tenant do Multiplai. Vive em app/loja dentro do CMSUI. Contexto separado do painel admin — auth, rotas e componentes próprios.",
+      "status": "active",
+      "stack": [
+        "Angular 15",
+        "TypeScript",
+        "ASP.NET Core 8"
+      ],
+      "ai": [],
+      "integracoes": [
+        "Multiplai/CMSX",
+        "Salematic API"
+      ],
+      "roadmap": [
+        {
+          "id": "loja-separacao-workspace",
+          "titulo": "Separar loja em Angular workspace multi-project",
+          "descricao": "Mover app/loja para projects/loja dentro do workspace Angular do CMSUI. Isolamento de bundle e rotas sem duplicar infraestrutura. Exige ajuste de imports, tsconfig e build pipeline.",
+          "status": "planejado",
+          "impacto": "alto"
+        },
+        {
+          "id": "loja-layout-shell-pagebuilder",
+          "titulo": "Layout-shell único editável via PageBuilder",
+          "descricao": "PageBuilder define header, área de conteúdo e footer como template global do site público. Elimina hardcode de layout e torna o site 100% editável via PageBuilder.",
+          "status": "planejado",
+          "impacto": "alto"
+        },
+        {
+          "id": "loja-blocos-pagebuilder",
+          "titulo": "Módulos da loja como blocos no PageBuilder",
+          "descricao": "Registrar menu, lista de produtos, carrinho, checkout e modal de dados do cliente como blocos disponíveis no PageBuilder do Multiplai.",
+          "status": "planejado",
+          "impacto": "medio"
+        },
+        {
+          "id": "loja-auth-proprio",
+          "titulo": "Auth própria da loja desacoplada do admin",
+          "descricao": "Garantir que o fluxo de login/logout da loja (app/loja/login) seja completamente independente do auth do painel admin. Guards, tokens e sessão separados.",
+          "status": "planejado",
+          "impacto": "medio"
         }
       ]
     }

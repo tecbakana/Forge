@@ -46,12 +46,13 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
-$scriptDir    = "T:\DevAutomation\scripts"
-$configDir    = "T:\DevAutomation\config"
-$templatesDir = "T:\DevAutomation\templates"
+$rootDir      = Split-Path $PSScriptRoot -Parent
+$scriptDir    = $PSScriptRoot
+$configDir    = Join-Path $rootDir "config"
+$templatesDir = Join-Path $rootDir "templates"
 
 # Carrega funcoes auxiliares
-. "$scriptDir\Apply-Configs.ps1"
+. (Join-Path $PSScriptRoot "Apply-Configs.ps1")
 
 # Carrega configuracao central
 $configFile = Join-Path $configDir "environments.json"
@@ -216,7 +217,7 @@ $apisParaProcessar | ForEach-Object {
 if ($OpenVisualStudio) {
     Write-Host "`n[4/4] Abrindo Visual Studio..." -ForegroundColor Yellow
 
-    $openScript = "T:\DevAutomation\scripts\Open-Solutions.ps1"
+    $openScript = Join-Path $PSScriptRoot "Open-Solutions.ps1"
 
     if (Test-Path $openScript) {
         # Passa o filtro de APIs para o Open-Solutions respeitar a selecao do usuario

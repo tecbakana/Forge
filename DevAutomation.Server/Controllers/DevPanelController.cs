@@ -15,6 +15,7 @@ public class DevPanelController : ControllerBase
     private readonly OrchestratorService _orchestrator;
     private readonly string _templatesDir;
     private readonly string _switchScript;
+    private readonly string _wikiDir;
     private readonly ILogger<DevPanelController> _logger;
     private readonly IConfiguration _cfg;
 
@@ -31,6 +32,7 @@ public class DevPanelController : ControllerBase
         _cfg          = cfg;
         _templatesDir = cfg["DevAutomation:TemplatesDir"]!;
         _switchScript = cfg["DevAutomation:SwitchScript"]!;
+        _wikiDir      = cfg["DevAutomation:WikiDir"]!;
         _logger       = logger;
     }
 
@@ -257,6 +259,60 @@ public class DevPanelController : ControllerBase
         proc.WaitForExit();
 
         return Ok(new { success = true, output });
+    }
+
+    // ── START-APPS ────────────────────────────────────────────────────────────
+
+    [HttpPost("start-apps")]
+    public IActionResult StartApps([FromBody] StartAppsRequest body)
+    {
+        var cfg = _config.LoadConfig();
+        var api = cfg.Apis.FirstOrDefault(a =>
+            string.Equals(a.Name, body.Api, StringComparison.OrdinalIgnoreCase));
+
+        if (api is null)
+            return BadRequest(new { success = false, error = "API não encontrada." });
+
+        if (api.RunTargets is null || api.RunTargets.Count == 0)
+            return Ok(new { success = false, error = "Nenhum runTarget configurado para esta API." });
+
+        var launched = new List<string>();
+        foreach (var target in api.RunTargets)
+        {
+            try
+            {
+                var wtArgs = $"new-tab --title \"{target.Name}\" --startingDirectory \"{target.Dir}\" pwsh -NoExit -Command \"{target.Command}\"";
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName        = "wt",
+                    Arguments       = wtArgs,
+                    UseShellExecute = true
+                });
+                launched.Add(target.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Falha ao abrir terminal para {Target}", target.Name);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(api.BrowserUrl))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName        = api.BrowserUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Falha ao abrir browser para {Url}", api.BrowserUrl);
+            }
+        }
+
+        return Ok(new { success = true, launched });
     }
 
     // ── RESTART ───────────────────────────────────────────────────────────────
@@ -512,6 +568,33 @@ public class DevPanelController : ControllerBase
         return Ok(new { success = true, id = request.Id });
     }
 
+    [HttpPut("devrequests/{id}")]
+    public IActionResult EditDevRequest(string id, [FromBody] DevRequestEditBody body)
+    {
+        var dir  = _orchestrator.DevRequestsDir;
+        var path = Path.Combine(dir, $"{id}.json");
+
+        if (!System.IO.File.Exists(path))
+            return NotFound(new { success = false, error = "Dev request não encontrada." });
+
+        var json = System.IO.File.ReadAllText(path);
+        var req  = JsonSerializer.Deserialize<DevRequest>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (req is null)
+            return BadRequest(new { success = false, error = "JSON inválido." });
+
+        req.Api                  = body.Api ?? req.Api;
+        req.Tipo                 = body.Tipo ?? req.Tipo;
+        req.Impacto              = body.Impacto ?? req.Impacto;
+        req.Descricao            = body.Descricao ?? req.Descricao;
+        req.Detalhes             = body.Detalhes;
+        req.DiretorioAlvo        = body.DiretorioAlvo;
+        req.TimestampAtualizacao = DateTime.UtcNow;
+
+        System.IO.File.WriteAllText(path, JsonSerializer.Serialize(req, new JsonSerializerOptions { WriteIndented = true }));
+
+        return Ok(new { success = true });
+    }
+
     [HttpPost("devrequests/action")]
     public async Task<IActionResult> DevRequestAction([FromBody] DevRequestActionBody body)
     {
@@ -578,11 +661,47 @@ public class DevPanelController : ControllerBase
     }
 
     private static string EscapeArg(string s) => s.Replace("\"", "\\\"");
+
+    // ── WIKI ──────────────────────────────────────────────────────────────────
+
+    [HttpGet("wiki/files")]
+    public IActionResult GetWikiFiles()
+    {
+        if (!Directory.Exists(_wikiDir))
+            return Ok(Array.Empty<string>());
+
+        var entries = Directory
+            .EnumerateFiles(_wikiDir, "*.md", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(_wikiDir, f).Replace('\\', '/'))
+            .OrderBy(f => f)
+            .ToList();
+
+        return Ok(entries);
+    }
+
+    [HttpGet("wiki/file")]
+    public IActionResult GetWikiFile([FromQuery] string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || path.Contains("..") || Path.IsPathRooted(path))
+            return BadRequest("Caminho inválido.");
+
+        var fullPath = Path.GetFullPath(Path.Combine(_wikiDir, path));
+
+        if (!fullPath.StartsWith(Path.GetFullPath(_wikiDir), StringComparison.OrdinalIgnoreCase))
+            return BadRequest("Acesso negado.");
+
+        if (!System.IO.File.Exists(fullPath))
+            return NotFound();
+
+        var content = System.IO.File.ReadAllText(fullPath);
+        return Content(content, "text/plain; charset=utf-8");
+    }
 }
 
 // ── REQUEST MODELS ────────────────────────────────────────────────────────────
 
 public record DevRequestActionBody(string? Id, string? Api, string? Action);
+public record DevRequestEditBody(string? Api, string? Tipo, string? Impacto, string? Descricao, string? Detalhes, string? DiretorioAlvo);
 
 public record SwitchRequest
 {
@@ -615,3 +734,4 @@ public class AgentHistoryItem
 
 public record RoadmapPromoteRequest(string ProjectId, string RoadmapItemId);
 public record RoadmapStatusRequest(string ProjectId, string RoadmapItemId, string Status);
+public record StartAppsRequest(string Api);

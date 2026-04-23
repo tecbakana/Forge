@@ -38,14 +38,15 @@ if (-not $devenv) {
 function Switch-ToDesktop {
     param([int]$DesktopIndex)
 
-    $vdExe = "T:\DevAutomation\tools\VirtualDesktop11.exe"
+    $rootDir = Split-Path (Split-Path $MyInvocation.MyCommand.Path -Parent) -Parent
+    $vdExe = Join-Path $rootDir "tools\VirtualDesktop11.exe"
 
     if (Test-Path $vdExe) {
         & $vdExe /Switch:$($DesktopIndex - 1) 2>$null
         Start-Sleep -Milliseconds 700
         Write-Host "  Desktop $DesktopIndex ativada" -ForegroundColor DarkGray
     } else {
-        Write-Warning "  VirtualDesktop11.exe nao encontrado em T:\DevAutomation\tools\"
+        Write-Warning "  VirtualDesktop11.exe nao encontrado em: $vdExe"
         Write-Host "  Mude manualmente para a Desktop $DesktopIndex e pressione qualquer tecla..." -ForegroundColor Yellow
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     }

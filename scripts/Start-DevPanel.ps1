@@ -22,20 +22,22 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$scriptDir    = "T:\DevAutomation\scripts"
-$panelDir     = "T:\DevAutomation\panel"
-$configDir    = "T:\DevAutomation\config"
-$templatesDir = "T:\DevAutomation\templates"
-$switchScript = "T:\DevAutomation\scripts\Switch-Environment.ps1"
+$rootDir      = Split-Path $PSScriptRoot -Parent
+$scriptDir    = $PSScriptRoot
+$panelDir     = Join-Path $rootDir "panel"
+$configDir    = Join-Path $rootDir "config"
+$templatesDir = Join-Path $rootDir "templates"
+$switchScript = Join-Path $PSScriptRoot "Switch-Environment.ps1"
+$devreqDir    = Join-Path $rootDir "dev-requests"
 
 # Arquivo de estado: guarda o último cliente aplicado por API
-$stateFile    = "T:\DevAutomation\config\state.json"
+$stateFile    = Join-Path $configDir "state.json"
 
-. "T:\DevAutomation\scripts\Git-Operations.ps1"
-. "T:\DevAutomation\scripts\Server-Operations.ps1"
+. (Join-Path $PSScriptRoot "Git-Operations.ps1")
+. (Join-Path $PSScriptRoot "Server-Operations.ps1")
 
 # Dot-source
-. "T:\DevAutomation\scripts\Invoke-GeminiAgent.ps1"
+. (Join-Path $PSScriptRoot "Invoke-GeminiAgent.ps1")
 
 # =============================================================================
 # Helpers
@@ -108,6 +110,7 @@ ESTADO ATUAL:
 REGRAS:
 - Ao executar ações, confirme o que foi feito de forma resumida
 - Se o usuário pedir algo ambíguo, pergunte antes de executar
+- Caso você tenha dúvidas na execução, pergunte antes de executar
 - Para switch de ambiente sem especificar APIs, use all
 - Nunca invente dados — use sempre as ferramentas para buscar informações reais
 "@
@@ -194,92 +197,214 @@ REGRAS:
 }
 
 function Handle-DevRequests($ctx) {
-    $raw    = Get-Content (Join-Path $configDir "environments.json") -Raw
-    $config = ($raw -replace '(?m)^\s*//.*$','') | ConvertFrom-Json
+    $method = $ctx.Request.HttpMethod
 
-    $todas = [System.Collections.Generic.List[object]]::new()
-    $seen  = @{}
-
-    if (-not $config -or -not $config.apis) {
-        Write-Response $ctx "[]"
+    # POST — cria novo arquivo individual em devreqDir
+    if ($method -eq "POST") {
+        $body = Read-Body $ctx | ConvertFrom-Json -AsHashtable
+        $id   = [guid]::NewGuid().ToString()
+        $now  = [datetime]::UtcNow.ToString("o")
+        $item = @{
+            id                  = $id
+            api                 = $body["api"]
+            tipo                = $body["tipo"]
+            impacto             = $body["impacto"]
+            descricao           = $body["descricao"]
+            detalhes            = $body["detalhes"]
+            url_externa         = $body["url_externa"]
+            diretorio_alvo      = $body["diretorio_alvo"]
+            status              = "pendente"
+            resultado           = $null
+            prompt_agente       = $null
+            timestamp           = $now
+            timestamp_atualizacao = $now
+        }
+        $path = Join-Path $devreqDir "$id.json"
+        $item | ConvertTo-Json -Depth 10 | Set-Content $path -Encoding UTF8
+        Write-Response $ctx (Json @{ success = $true; id = $id })
         return
     }
 
-    foreach ($apiDef in $config.apis) {
-        $repo    = "$($apiDef.gitRepo)"
-        $apiName = "$($apiDef.name)"
-        if ([string]::IsNullOrWhiteSpace($repo) -or $seen.ContainsKey($repo)) { continue }
-        $seen[$repo] = $true
+    # GET — lê queue.json dos repos + arquivos individuais em devreqDir
+    $raw    = Get-Content (Join-Path $configDir "environments.json") -Raw
+    $config = ($raw -replace '(?m)^\s*//.*$','') | ConvertFrom-Json
 
-        $queuePath = Join-Path $repo "dev-requests\queue.json"
-        if (-not (Test-Path $queuePath)) { continue }
+    $todas  = [System.Collections.Generic.List[object]]::new()
+    $seen   = @{}
+    $idsVia = [System.Collections.Generic.HashSet[string]]::new()
 
-        try {
-            $content = Get-Content $queuePath -Raw
-            if ([string]::IsNullOrWhiteSpace($content)) { continue }
-
-            $items = $content | ConvertFrom-Json -AsHashtable
-            if (-not $items) { continue }
-
-            @($items) | ForEach-Object {
-                if (-not $_) { return }
-                $_["api"] = $apiName
-                $todas.Add($_)
+    # Arquivos individuais em devreqDir
+    if (Test-Path $devreqDir) {
+        Get-ChildItem $devreqDir -Filter "*.json" | ForEach-Object {
+            try {
+                $content = Get-Content $_.FullName -Raw
+                if ([string]::IsNullOrWhiteSpace($content)) { return }
+                $item = $content | ConvertFrom-Json -AsHashtable
+                if (-not $item -or -not $item["id"]) { return }
+                $idsVia.Add($item["id"]) | Out-Null
+                $todas.Add($item)
+            } catch {
+                Write-Warning "  [DEV-REQUEST] Erro ao ler $($_.Name): $_"
             }
-        } catch {
-            Write-Warning "  [DEV-REQUEST] Erro ao ler $queuePath`: $_"
+        }
+    }
+
+    # queue.json dos repos (compatibilidade com Salematic e outros)
+    if ($config -and $config.apis) {
+        foreach ($apiDef in $config.apis) {
+            $repo    = "$($apiDef.gitRepo)"
+            $apiName = "$($apiDef.name)"
+            if ([string]::IsNullOrWhiteSpace($repo) -or $seen.ContainsKey($repo)) { continue }
+            $seen[$repo] = $true
+
+            $queuePath = Join-Path $repo "dev-requests\queue.json"
+            if (-not (Test-Path $queuePath)) { continue }
+
+            try {
+                $content = Get-Content $queuePath -Raw
+                if ([string]::IsNullOrWhiteSpace($content)) { continue }
+                $items = $content | ConvertFrom-Json -AsHashtable
+                if (-not $items) { continue }
+                @($items) | ForEach-Object {
+                    if (-not $_ -or $idsVia.Contains($_["id"])) { return }
+                    $_["api"] = $apiName
+                    $todas.Add($_)
+                }
+            } catch {
+                Write-Warning "  [DEV-REQUEST] Erro ao ler $queuePath`: $_"
+            }
         }
     }
 
     Write-Response $ctx (ConvertTo-Json -InputObject @($todas.ToArray()) -Depth 10 -Compress)
 }
 
+function Find-DevRequestItem($id) {
+    # Tenta arquivo individual primeiro
+    $filePath = Join-Path $script:devreqDir "$id.json"
+    if (Test-Path $filePath) {
+        $content = Get-Content $filePath -Raw -Encoding UTF8 | ConvertFrom-Json -AsHashtable
+        return @{ item = $content; type = "file"; path = $filePath; items = $null; queuePath = $null }
+    }
+
+    # Fallback: queue.json dos repos
+    $raw    = Get-Content (Join-Path $script:configDir "environments.json") -Raw
+    $config = ($raw -replace '(?m)^\s*//.*$','') | ConvertFrom-Json
+    foreach ($apiDef in $config.apis) {
+        $repo = "$($apiDef.gitRepo)"
+        if ([string]::IsNullOrWhiteSpace($repo)) { continue }
+        $queuePath = Join-Path $repo "dev-requests\queue.json"
+        if (-not (Test-Path $queuePath)) { continue }
+        $items = Get-Content $queuePath -Raw | ConvertFrom-Json -AsHashtable
+        $item  = @($items) | Where-Object { $_["id"] -eq $id } | Select-Object -First 1
+        if ($item) {
+            return @{ item = $item; type = "queue"; path = $null; items = $items; queuePath = $queuePath }
+        }
+    }
+    return $null
+}
+
+function Save-DevRequestItem($found) {
+    $now = [datetime]::UtcNow.ToString("o")
+    $found["item"]["timestamp_atualizacao"] = $now
+    if ($found["type"] -eq "file") {
+        $found["item"] | ConvertTo-Json -Depth 10 | Set-Content $found["path"] -Encoding UTF8
+    } else {
+        $found["items"] | ConvertTo-Json -Depth 10 | Set-Content $found["queuePath"] -Encoding UTF8
+    }
+}
+
 function Handle-DevRequestAction($ctx) {
     $body   = Read-Body $ctx | ConvertFrom-Json -AsHashtable
     $id     = $body["id"]
-    $action = $body["action"]   # "implementar" | "ignorar"
+    $action = $body["action"]
     $api    = $body["api"]
 
-    $raw    = Get-Content (Join-Path $configDir "environments.json") -Raw
-    $config = ($raw -replace '(?m)^\s*//.*$','') | ConvertFrom-Json
-
-    $apiObj    = $config.apis | Where-Object { $_.name -eq $api } | Select-Object -First 1
-    $queuePath = Join-Path "$($apiObj.gitRepo)" "dev-requests\queue.json"
-
-    if (-not (Test-Path $queuePath)) {
-        Write-Response $ctx (Json @{ success = $false; error = "queue.json não encontrado" }) -StatusCode 404
-        return
-    }
-
-    $items = Get-Content $queuePath -Raw | ConvertFrom-Json
-    $item  = $items | Where-Object { $_.id -eq $id } | Select-Object -First 1
-
-    if (-not $item) {
+    $found = Find-DevRequestItem $id
+    if (-not $found) {
         Write-Response $ctx (Json @{ success = $false; error = "Request não encontrada" }) -StatusCode 404
         return
     }
+    $item = $found.item
 
     $novoStatus = switch ($action) {
-        "ignorar"  { "ignorado" }
-        "aprovar"  { "pendente" }
-        default    { "em_andamento" }
+        "ignorar"   { "cancelado" }
+        "cancelar"  { "cancelado" }
+        "aprovar"   { "in_progress" }
+        "retomar"   { "in_progress" }
+        "completar" { "done" }
+        default     { "in_progress" }
     }
-    $item.status = $novoStatus
-    $items | ConvertTo-Json -Depth 10 | Set-Content $queuePath -Encoding UTF8
+    $item["status"] = $novoStatus
+    Save-DevRequestItem $found
 
-    if ($action -eq "implementar") {
-        $prompt = "Dev request do chat do $api`: $($item.descricao). Tipo: $($item.tipo). Impacto: $($item.impacto). Detalhes: $($item.detalhes). Implemente a alteracao necessaria no projeto."
-        $repoPath = "$($apiObj.gitRepo)"
-        Start-Process "wt" -ArgumentList "new-tab --title `"DevRequest`" --startingDirectory `"$repoPath`" pwsh -NoExit -Command `"claude '$prompt'`""
-        Write-Host "  [DEV-REQUEST] Abrindo Claude Code para: $($item.descricao)" -ForegroundColor Cyan
+    if ($action -eq "implementar" -or $action -eq "aprovar" -or $action -eq "retomar") {
+        $raw    = Get-Content (Join-Path $script:configDir "environments.json") -Raw
+        $config = ($raw -replace '(?m)^\s*//.*$','') | ConvertFrom-Json
+        $apiName = if ($item["api"]) { $item["api"] } else { $api }
+        $apiObj = $config.apis | Where-Object { $_.name -eq $apiName } | Select-Object -First 1
+        $repoPath = if ($apiObj) { "$($apiObj.gitRepo)" } else { $rootDir }
+
+        $devreqFilePath = Join-Path $script:devreqDir "$id.json"
+        $respostaUsuario = if ($item["resposta_usuario"]) { "`n`nResposta do usuario: $($item["resposta_usuario"])" } else { "" }
+
+        $prompt = "Voce esta implementando uma dev-request do Forge. " +
+            "Arquivo da demanda: $devreqFilePath `n" +
+            "Descricao: $($item["descricao"]). " +
+            "Tipo: $($item["tipo"]). Impacto: $($item["impacto"]). " +
+            "Detalhes: $($item["detalhes"]).$respostaUsuario `n`n" +
+            "INSTRUCOES OBRIGATORIAS: " +
+            "1) Ao terminar, atualize o campo 'status' para 'done' e 'resultado' com resumo do que foi feito no arquivo $devreqFilePath. " +
+            "2) SE tiver duvidas ou blockers ANTES de implementar, atualize o campo 'status' para 'impeditivo' e escreva sua duvida no campo 'resultado' do arquivo $devreqFilePath — NAO use 'done' quando houver duvidas. " +
+            "3) Atualize sempre o campo 'timestamp_atualizacao' com a data/hora atual UTC no formato ISO 8601."
+
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName               = "claude"
+        $psi.Arguments              = "--dangerously-skip-permissions --print"
+        $psi.WorkingDirectory       = $repoPath
+        $psi.RedirectStandardInput  = $true
+        $psi.RedirectStandardOutput = $false
+        $psi.RedirectStandardError  = $false
+        $psi.UseShellExecute        = $false
+        $psi.CreateNoWindow         = $true
+        $proc = [System.Diagnostics.Process]::Start($psi)
+        $proc.StandardInput.WriteLine($prompt)
+        $proc.StandardInput.Close()
+        Write-Host "  [DEV-REQUEST] Claude Code despachado (background) para: $($item["descricao"])" -ForegroundColor Cyan
     }
 
     Write-Response $ctx (Json @{ success = $true; status = $novoStatus })
 }
 
+function Handle-DevRequestResponder($ctx) {
+    try {
+        $body     = Read-Body $ctx | ConvertFrom-Json -AsHashtable
+        $id       = $body["id"]
+        $resposta = $body["resposta"]
+
+        $filePath = Join-Path $script:devreqDir "$id.json"
+        if (-not (Test-Path $filePath)) {
+            Write-Response $ctx (Json @{ success = $false; error = "Arquivo não encontrado: $filePath" }) -StatusCode 404
+            return
+        }
+
+        $content = Get-Content $filePath -Raw -Encoding UTF8
+        $item    = $content | ConvertFrom-Json -AsHashtable
+        $item["resposta_usuario"]      = $resposta
+        $item["timestamp_atualizacao"] = [datetime]::UtcNow.ToString("o")
+
+        $item | ConvertTo-Json -Depth 10 | Set-Content $filePath -Encoding UTF8
+
+        Write-Response $ctx (Json @{ success = $true })
+    } catch {
+        Write-Warning "  [RESPONDER] Erro: $_"
+        Write-Response $ctx (Json @{ success = $false; error = $_.ToString() }) -StatusCode 500
+    }
+}
+
 function Handle-Restart($ctx) {
     Write-Response $ctx (Json @{ success = $true; message = "Reiniciando..." })
-    Start-Process pwsh -ArgumentList "-ExecutionPolicy Bypass -File `"T:\DevAutomation\scripts\Start-DevPanel.ps1`""
+    Start-Process pwsh -ArgumentList "-ExecutionPolicy Bypass -File `"$(Join-Path $PSScriptRoot 'Start-DevPanel.ps1')`""
     Stop-Process -Id $PID
 }
 
@@ -380,10 +505,10 @@ function Handle-Switch($ctx) {
         }
 
         # Abre Visual Studio diretamente daqui (evita cadeia de processos aninhados)
-        $logFile = "T:\DevAutomation\vs-open.log"
+        $logFile = Join-Path $rootDir "vs-open.log"
         "[$([datetime]::Now)] Handle-Switch: openVS=$openVS  api=$api" | Out-File $logFile -Append
         if ($openVS) {
-            $openScript = "T:\DevAutomation\scripts\Open-Solutions.ps1"
+            $openScript = Join-Path $PSScriptRoot "Open-Solutions.ps1"
             "[$([datetime]::Now)] Iniciando Open-Solutions.ps1 com api=$api" | Out-File $logFile -Append
             $vsArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $openScript)
             if ($api -ne "all") { $vsArgs += @("-Api", $api) }
@@ -616,7 +741,7 @@ function Handle-RegisterApp($ctx) {
         gitRepo      = $body["gitRepo"]
         solutionPath = $body["solutionPath"]
         desktop      = [int]$body["desktop"]
-        batchOpen    = "T:\DevAutomation\batches\open-solution.bat"
+        batchOpen    = Join-Path $rootDir "batches\open-solution.bat"
         clients      = @("default")
     }
 
@@ -696,8 +821,9 @@ function Route($ctx) {
 		"^/api/apps/register$"      { Handle-RegisterApp      $ctx }
 		"^/api/apps/unregister$"    { Handle-UnregisterApp    $ctx }
 		"^/api/browse$"             { Handle-Browse           $ctx }
-		"^/api/devrequests$"        { Handle-DevRequests      $ctx }
-		"^/api/devrequests/action$" { Handle-DevRequestAction $ctx }
+		"^/api/devrequests$"           { Handle-DevRequests         $ctx }
+		"^/api/devrequests/action$"    { Handle-DevRequestAction    $ctx }
+		"^/api/devrequests/responder$" { Handle-DevRequestResponder $ctx }
         default                  { Handle-Static          $ctx }
     }
 }
